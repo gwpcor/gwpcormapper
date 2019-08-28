@@ -1,0 +1,11 @@
+version: '3.7'
+
+services:
+  app:
+    build: .
+    volumes:
+      - ./codes:/home/rstudio/ShinyApps
+    environment:
+      PASSWORD: passwd
+    ports:
+      - "80:8787"
