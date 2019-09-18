@@ -7,9 +7,9 @@ WORKDIR /home/rstudio/ShinyApps/
 RUN chown rstudio:rstudio -R /home/rstudio/ShinyApps
 RUN chmod -R 775 /home/rstudio/ShinyApps
 COPY ./codes/app.R /home/rstudio/ShinyApps/
-COPY ./shiny-server.sh /home/rstudio/shiny-server.sh
+COPY ./entry.sh /home/rstudio/entry.sh
 RUN chmod -R 775 /home/rstudio/ShinyApps/app.R
-RUN chmod -R 775 /home/rstudio/shiny-server.sh
+RUN chmod -R 775 /home/rstudio/entry.sh
 RUN chown rstudio:rstudio -R /home/rstudio/ShinyApps/app.R
 
 
