@@ -17,6 +17,10 @@ library(crosstalk)
 library(foreach)
 library(doParallel)
 
+# gwpcor function for parallel computing
+# core registraion functions were extract outside from gwpcor::gwpcor function due to the suspicion of the slow processing
+source(here("gwpcor_parallel_func.R"))
+
 
 tokyo2005_sf <- sf::st_read(here("tokyo2005_sf.gpkg")) %>% st_transform(.,4326)
 load(here("dMat.rd"))  # load distant matrix
@@ -27,14 +31,12 @@ st_geometry(tokyo2005) <- NULL
 num_row <- nrow(tokyo2005)
 
 
-# gwpcor function for parallel computing
-# core registraion functions were extract outside from gwpcor::gwpcor function due to the suspicion of the slow processing
-source(here("gwpcor_parallel_func.R"))
+
 
 
 # gwpcor wrapper function
 gwpcor_calc <- function(var1, var2, var3, method,kernel, b){
-  selected_vars <- c(var1, var2, var3) %+% "_2005"
+  selected_vars <- c(var1, var2, var3)
   out <- gwpcor_parallel(tokyo2005_sf,
                          vars = selected_vars,
                          method = method,
@@ -48,12 +50,7 @@ gwpcor_calc <- function(var1, var2, var3, method,kernel, b){
 }
 
 
-varname_id <-  names(tokyo2005_sf) %>%
-  grep("\\_2005$", .)
-
-varname <- names(tokyo2005_sf)[varname_id] %>%
-  strsplit(., "_2005") %>%
-  sapply(.,"[[",1)
+varname <- colnames(tokyo2005)
 
 # this is a quick hack:
 names(varname) <- variable.translation$English
@@ -120,14 +117,11 @@ ui <- dashboardPage(
 server <- function(input, output, session) {
   old <- Sys.time()
   selected <- reactive({
-    w1 <- which(varname==input$input_type1)
-    w2 <- which(varname==input$input_type2)
-
     if(input$radio=="cor"){
 
       ifelse(input$radio2=="pearson",
-             vn <- "corr_" %+% varname[w1] %+% "_2005." %+% varname[w2] %+% "_2005",
-             vn <- "scorr_" %+% varname[w1] %+% "_2005." %+% varname[w2] %+% "_2005" )
+             vn <- "corr_" %+% input$input_type1 %+% "." %+% input$input_type2,
+             vn <- "scorr_" %+% input$input_type1 %+% "." %+% input$input_type2)
 
       old.pcor <- Sys.time() # get start time
 
@@ -145,8 +139,9 @@ server <- function(input, output, session) {
     } else{
 
       ifelse(input$radio2=="pearson",
-             vn <- "pcorr_" %+% varname[w1] %+% "_2005." %+% varname[w2] %+% "_2005",
-             vn <- "spcorr_" %+% varname[w1] %+% "_2005." %+% varname[w2] %+% "_2005" )
+             vn <- "pcorr_" %+% input$input_type1 %+% "." %+% input$input_type2,
+             vn <- "spcorr_" %+% input$input_type1 %+% "." %+% input$input_type2)
+      
       cl <- makeCluster(detectCores())
       registerDoParallel(cl)
       shapefile <- gwpcor_calc(var1 = input$input_type1,
@@ -183,9 +178,9 @@ server <- function(input, output, session) {
                        na.color = "#bdbdbd"
       )
       shapefile_selected <-  selected()
-      var1 <- input$input_type1 %+% "_2005"
-      var2 <- input$input_type2 %+% "_2005"
-      var3 <- input$input_type3 %+% "_2005"
+      var1 <- input$input_type1
+      var2 <- input$input_type2
+      var3 <- input$input_type3
       
       if(input$radio=="cor"){
         plot_title <- "Geographically Weighted Correlation"
