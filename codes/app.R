@@ -1,26 +1,26 @@
-library(shiny)
-library(leaflet)
-library(sf)
-library(sp)
-library(tidyverse)
-library(shinydashboard)
-library(shinythemes)
-library(MyRMiscFunc)
+library(crosstalk)
+library(doParallel)
+library(dplyr)
+library(foreach)
+library(GWmodel)
 library(gwpcor)
 library(here)
-library(spdplyr)
-library(GWmodel)
+library(leaflet)
+library(MyRMiscFunc)
 library(plotly)
 library(RColorBrewer)
-library(dplyr)
-library(crosstalk)
-library(foreach)
-library(doParallel)
+library(shiny)
+library(shinydashboard)
+library(shinythemes)
+library(sf)
+library(sp)
+library(spdplyr)
+library(tidyverse)
 
 
-tokyo2005_sf <- sf::st_read(here("ShinyApps/tokyo2005_sf.gpkg")) %>% st_transform(.,4326)
-load(here("ShinyApps/dMat.rd"))  # load distant matrix
-variable.translation <- read.csv(here("ShinyApps/eng_code.csv"), stringsAsFactors = FALSE)
+tokyo2005_sf <- sf::st_read(here("tokyo2005_sf.gpkg")) %>% st_transform(.,4326)
+load(here("dMat.rd"))  # load distant matrix
+variable.translation <- read.csv(here("eng_code.csv"), stringsAsFactors = FALSE)
 
 tokyo2005 <- tokyo2005_sf
 st_geometry(tokyo2005) <- NULL
@@ -29,7 +29,7 @@ num_row <- nrow(tokyo2005)
 
 # gwpcor function for parallel computing
 # core registraion functions were extract outside from gwpcor::gwpcor function due to the suspicion of the slow processing
-source(here("ShinyApps/gwpcor_parallel_func.R"))
+source(here("gwpcor_parallel_func.R"))
 
 # gwpcor wrapper function
 gwpcor_calc <- function(var1, var2, var3, method,kernel, b){
@@ -60,73 +60,118 @@ names(varname) <- variable.translation$English
 bounds <- st_bbox(tokyo2005_sf)
 
 ui <- dashboardPage(
-  dashboardHeader(title = ""),
-  dashboardSidebar(sidebarMenu(
-                         menuItem(h3("Choose parameters"),
-                                  tabName = "map"),
-                         radioButtons(inputId = "radio", label = h4("Type"),
-                                      choices = list("GW correlation" = "cor",
-                                                     "GW partial correlation" = "pcor"),
-                                      selected = "cor"),
-                        radioButtons(inputId = "radio2", label = h4("Correlation type"),
-                                     choices = list("Pearson" = "pearson",
-                                                    "Spearman" = "spearman"),
-                                      selected = "pearson"),
-                         selectInput(inputId = "input_type1",
-                                     label = "Correlation pair 1",
-                                     choices = varname,
-                                     selected=varname[178]),
-                         selectInput(inputId = "input_type2",
-                                     label = "Correlation pair 2",
-                                     choices = varname,
-                                     selected=varname[171]),
-                         conditionalPanel(
-                           condition = "input.radio == 'pcor'",
-                           selectInput(inputId = "input_type3",
-                                       label = "Control variable",
-                                       choices = varname,
-                                       selected=varname[173],
-                                       multiple = TRUE)
-                         ),
-                         selectInput(inputId = "input_type4",
-                                     label = "Kernel type",
-                                     choices = ,list("Gaussian" = "gaussian",
-                                                     "Exponential"  = "exponential",
-                                                     "Bisquare" = "bisquare",
-                                                     "Tricube"= "tricube",
-                                                     "Box-car" = "boxcar"),
-                                     selected = "bisquare"),
-                         sliderInput("slider", "Adaptive kernel size:", 0.1, 1, 0.25)
-                         )),
+  header = dashboardHeader(),
+  sidebar = dashboardSidebar(
+    sidebarMenu(
+      # Horizontal line ----
+      menuItem(h4("Data"),
+               tabName = "data",
+               column(
+                 width = 12,
+                # Input: Select a file ----
+                fileInput("file1", "Choose File",
+                          multiple = FALSE,
+                          accept = c(".gpkg")
+                          ),
+                # Horizontal line ----
+                tags$hr()
+                )
+               ),
+      # Horizontal line ----
+      menuItem(h4("Parameters"),
+               tabName = "map",
+               column(
+                 width = 12,
+                 # Horizontal line ----
+                 radioButtons(
+                   inputId = "radio", 
+                   label = h4("Type"),
+                   choices = list("GW correlation" = "cor", "GW partial correlation" = "pcor"), 
+                   selected = "cor"
+                   ),
+                 # Horizontal line ----
+                 radioButtons(
+                   inputId = "radio2", 
+                   label = h4("Correlation type"),
+                   choices = list("Pearson" = "pearson", "Spearman" = "spearman"),
+                   selected = "pearson"),
+                 # Horizontal line ----
+                 selectInput(
+                   inputId = "input_type1",
+                   label = "Correlation pair 1",
+                   choices = varname,
+                   selected=varname[178]
+                   ),
+                 # Horizontal line ----
+                 selectInput(
+                   inputId = "input_type2",
+                   label = "Correlation pair 2",
+                   choices = varname,
+                   selected=varname[171]
+                   ),
+                 # Horizontal line ----
+                 conditionalPanel(
+                   condition = "input.radio == 'pcor'",
+                   selectInput(
+                     inputId = "input_type3",
+                     label = "Control variable",
+                     choices = varname,
+                     selected=varname[173],
+                     multiple = TRUE
+                     )
+                   ),
+                 # Horizontal line ----
+                 selectInput(
+                   inputId = "input_type4",
+                   label = "Kernel type",
+                   choices = list(
+                     "Gaussian" = "gaussian", 
+                     "Exponential"  = "exponential", 
+                     "Bisquare" = "bisquare",
+                     "Tricube"= "tricube",
+                     "Box-car" = "boxcar"
+                     ),
+                   selected = "bisquare"
+                   ),
+                 # Horizontal line ----
+                 sliderInput("slider", "Adaptive kernel size:", 0.1, 1, 0.25)
+                 )
+               )
+      )
+    ),
+  # Horizontal line ----
   dashboardBody(
-    tags$head(tags$style(HTML("
-        div.col-sm-7 {
-          padding-right: 0
-        }
-
-        div.col-sm-5 {
-          padding-left: 0
-        }
-
-        div.box {
-          margin: 0;
-          padding: 0;
-          background: #191A1A;
-        }
-    "))),
+    # tags$head(tags$style(HTML("
+    #     div.col-sm-7 {
+    #       padding-right: 0
+    #     }
+    # 
+    #     div.col-sm-5 {
+    #       padding-left: 0
+    #     }
+    # 
+    #     div.box {
+    #       margin: 0;
+    #       padding: 0;
+    #       background: #191A1A;
+    #     }
+    #   "))),
+    tabItem(tabName = "data",
+            h2("HELLO"),
+            tableOutput("contents")
+            ),
     tabItem(tabName = "map",
             h2(uiOutput("title_panel"), align = "center"),
-              fluidRow(
-                box(plotlyOutput("map"), width = 7, height = 600),
-                box(plotlyOutput("plot"), width = 5, height = 600)
-                # box(plotOutput("colorbar"), width = 12)
+            fluidRow(
+              box(plotlyOutput("map"), width = 7, height = 600),
+              box(plotlyOutput("plot"), width = 5, height = 600)
               )
             )
-        )
-   )
+    )
+  )
 
+# ui definition ----
 server <- function(input, output, session) {
-  old <- Sys.time()
   selected <- reactive({
     w1 <- which(varname==input$input_type1)
     w2 <- which(varname==input$input_type2)
@@ -359,28 +404,34 @@ server <- function(input, output, session) {
     }
    })
   
-  # color.bar <- function(lut, min, max=-min, nticks=11, ticks=seq(min, max, len=nticks), title='') {
-  #   scale = (length(lut)-1)/(max-min)
-  # 
-  #   plot(c(0,10), c(min,max), type='n', bty='n', xaxt='n', xlab='', yaxt='n', ylab='', main=title)
-  # 
-  #   axis(1, ticks, las=1)
-  #   for (i in 1:(length(lut)-1)) {
-  #     x = (i-1)/scale + min
-  #     rect(0,x,10,x+1/scale, col=lut[i], border=NA)
-  #   }
-  # }
-  # 
-  # output$colorbar <- renderPlot({
-  #   color.bar(rpal, -1)
-  # })
+  output$contents <- renderTable({
+    # input$file1 will be NULL initially. After the user selects
+    # and uploads a file, head of that data file by default,
+    # or all rows if selected, will be shown.
+    
+    req(input$file1)
+    # when reading semicolon separated files,
+    # having a comma separator causes `read.csv` to error
+    tryCatch(
+      {
+        df <- sf::st_read(input$file1$datapath) %>% 
+          st_transform(.,4326)
+      },
+      error = function(e) {
+        # return a safeError if a parsing error occurs
+        stop(safeError(e))
+      }
+    )
+    
+    return(head(
+      df %>% st_set_geometry(NULL)
+    ))
+    
+  })
+
   
   })
+
 }
 
-# cl <- makeCluster(detectCores())
-# registerDoParallel(cl)
-
 shinyApp(ui, server)
-
-# stopCluster(cl)
