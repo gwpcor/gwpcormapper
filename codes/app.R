@@ -18,9 +18,9 @@ library(foreach)
 library(doParallel)
 
 
-tokyo2005_sf <- sf::st_read(here("/tokyo2005_sf.gpkg")) %>% st_transform(.,4326)
-load(here("/dMat.rd"))  # load distant matrix
-variable.translation <- read.csv(here("/eng_code.csv"), stringsAsFactors = FALSE)
+tokyo2005_sf <- sf::st_read(here("ShinyApps/tokyo2005_sf.gpkg")) %>% st_transform(.,4326)
+load(here("ShinyApps/dMat.rd"))  # load distant matrix
+variable.translation <- read.csv(here("ShinyApps/eng_code.csv"), stringsAsFactors = FALSE)
 
 tokyo2005 <- tokyo2005_sf
 st_geometry(tokyo2005) <- NULL
@@ -29,7 +29,7 @@ num_row <- nrow(tokyo2005)
 
 # gwpcor function for parallel computing
 # core registraion functions were extract outside from gwpcor::gwpcor function due to the suspicion of the slow processing
-source(here("/gwpcor_parallel_func.R"))
+source(here("ShinyApps/gwpcor_parallel_func.R"))
 
 # gwpcor wrapper function
 gwpcor_calc <- function(var1, var2, var3, method,kernel, b){
@@ -138,17 +138,25 @@ server <- function(input, output, session) {
              vn <- "scorr_" %+% varname[w1] %+% "_2005." %+% varname[w2] %+% "_2005" )
      
       old.pcor <- Sys.time() # get start time
+      
+      cl <- makeCluster(detectCores())
+      registerDoParallel(cl)
+      
       shapefile <- gwpcor_calc(var1 = input$input_type1,
                                var2 = input$input_type2,
                                var3 = input$input_type3, # this shouldnt be necessary, but since its calling gwpcor it is.
                                method = input$radio2,
                                kernel = input$input_type4,
                                b = as.integer(input$slider * num_row))
+      stopCluster(cl)
       } else{
-        
-      ifelse(input$radio2=="pearson",
+        ifelse(input$radio2=="pearson",
                vn <- "pcorr_" %+% varname[w1] %+% "_2005." %+% varname[w2] %+% "_2005",
                vn <- "spcorr_" %+% varname[w1] %+% "_2005." %+% varname[w2] %+% "_2005" )
+      
+        cl <- makeCluster(detectCores())
+        registerDoParallel(cl)
+        
         
       shapefile <- gwpcor_calc(var1 = input$input_type1,
                                var2 = input$input_type2,
@@ -156,6 +164,8 @@ server <- function(input, output, session) {
                                method = input$radio2,
                                kernel = input$input_type4,
                                b = as.integer(input$slider * num_row))
+      stopCluster(cl)
+      
       }
 
     shapefile_selected <- shapefile %>% dplyr::select(vn)
@@ -368,9 +378,9 @@ server <- function(input, output, session) {
   })
 }
 
-cl <- makeCluster(detectCores())
-registerDoParallel(cl)
+# cl <- makeCluster(detectCores())
+# registerDoParallel(cl)
 
 shinyApp(ui, server)
 
-stopCluster(cl)
+# stopCluster(cl)
