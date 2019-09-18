@@ -17,13 +17,10 @@ library(crosstalk)
 library(foreach)
 library(doParallel)
 
-# set mapbox token (add through env variable later)
-Sys.setenv('MAPBOX_TOKEN' = 'pk.eyJ1IjoiaW9zZWZhIiwiYSI6ImNqeDl3dWxrZzEwbjkzb3F1emRhZXE1djAifQ.oqdllHfJqCh7L5TPO6jyqQ')
 
-
-tokyo2005_sf <- sf::st_read(here("ShinyApps/tokyo2005_sf.gpkg")) %>% st_transform(.,4326)
-load(here("ShinyApps/dMat.rd"))  # load distant matrix
-variable.translation <- read.csv(here("ShinyApps/eng_code.csv"), stringsAsFactors = FALSE)
+tokyo2005_sf <- sf::st_read(here("/tokyo2005_sf.gpkg")) %>% st_transform(.,4326)
+load(here("/dMat.rd"))  # load distant matrix
+variable.translation <- read.csv(here("/eng_code.csv"), stringsAsFactors = FALSE)
 
 tokyo2005 <- tokyo2005_sf
 st_geometry(tokyo2005) <- NULL
@@ -32,8 +29,7 @@ num_row <- nrow(tokyo2005)
 
 # gwpcor function for parallel computing
 # core registraion functions were extract outside from gwpcor::gwpcor function due to the suspicion of the slow processing
-source(here("ShinyApps/gwpcor_parallel_func.R"))
-
+source(here("/gwpcor_parallel_func.R"))
 
 # gwpcor wrapper function
 gwpcor_calc <- function(var1, var2, var3, method,kernel, b){

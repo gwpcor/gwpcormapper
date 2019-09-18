@@ -6,9 +6,11 @@ RUN mkdir -p /home/rstudio/ShinyApps
 WORKDIR /home/rstudio/ShinyApps/
 RUN chown rstudio:rstudio -R /home/rstudio/ShinyApps
 RUN chmod -R 775 /home/rstudio/ShinyApps
-COPY ./codes/shiny_code.R /home/rstudio/ShinyApps/
-RUN chmod -R 775 /home/rstudio/ShinyApps/shiny_code.R
-RUN chown rstudio:rstudio -R /home/rstudio/ShinyApps/shiny_code.R
+COPY ./codes/app.R /home/rstudio/ShinyApps/
+COPY ./shiny-server.sh /home/rstudio/shiny-server.sh
+RUN chmod -R 775 /home/rstudio/ShinyApps/app.R
+RUN chmod -R 775 /home/rstudio/shiny-server.sh
+RUN chown rstudio:rstudio -R /home/rstudio/ShinyApps/app.R
 
 
 RUN mkdir -p /home/rstudio/pkg
