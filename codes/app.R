@@ -205,9 +205,18 @@ server <- function(input, output, session) {
           ) %>%
           hide_colorbar()
       })
+      
+      output$plot <- renderPlotly({
+          plotly_empty() %>%
+            layout(
+              font = list(color='white'),
+              plot_bgcolor = '#191A1A',
+              paper_bgcolor = '#191A1A'
+            ) 
+      })
+      
     }
     else{
-      
       bounds <- st_bbox(data)
       
       output$map <- renderPlotly({
@@ -225,197 +234,202 @@ server <- function(input, output, session) {
           hide_colorbar()
       })
 
+    }
+    
 
-      if(input$submit) {
-        rpal <- brewer.pal(n = 8, name = "RdBu")
-        pal1 <- colorBin("RdBu",
-                         c(-1,1),
-                         bins=11 ,
-                         na.color = "#bdbdbd"
-        )
-        shapefile_selected <-  selected()
-        var1 <- input$input_type1
-        var2 <- input$input_type2
-        var3 <- input$input_type3
-        
-        if(input$radio=="cor"){
-          plot_title <- "Geographically Weighted Correlation"
-        }
-        else {
-          plot_title <- "Geographically Weighted Partial Correlation"
-        }
-        shapefile_selected <- cbind(shapefile_selected, data[[var1]])
-        shapefile_selected <- cbind(shapefile_selected, data[[var2]])
-        
-        for (control.variable in var3) {
-          shapefile_selected <- cbind(shapefile_selected, data[[control.variable]])
-        }
-        
-        var3.names <- c()
-        for (ind in 1:length(var3)) {
-          var3.names[ind] = paste0("var", ind+2)
-        }
-        
-        table.names <- c(c('val', 'var1', 'var2'), var3.names, c('geometry') )
-        colnames(shapefile_selected) <- table.names
-        
-        name.mapping <- c(c(var1), c(var2), c(var3))
-        
-        names(name.mapping) <- c(c('var1', 'var2'), var3.names)
-        
-        ncsd <- SharedData$new(shapefile_selected)
-        
-        output$title_panel = renderText(plot_title)
-        
-        output$map <- renderPlotly({
-          plot_mapbox(
-            source = "map",
-            ncsd,
-            split = ~cut(val, b = c(-1,-.8,-.6, -.4, -.2, 0, .2, .4, .6, .8, 1)),
-            stroke = ~I(pal1(val)),
-            color = ~val,
-            fillcolor = ~I(pal1(val)),
-            colors = "RdBu",
-            opacity = 0.1,
-            # height = 580,
-            text = ~paste("GW coefficient: ", val),
-            showlegend = FALSE
+  })
+  
+  observeEvent(input$submit, {
+    bounds <- st_bbox(data)
+    if(input$submit) {
+      rpal <- brewer.pal(n = 8, name = "RdBu")
+      pal1 <- colorBin("RdBu",
+                       c(-1,1),
+                       bins=11 ,
+                       na.color = "#bdbdbd"
+      )
+      shapefile_selected <-  selected()
+      var1 <- input$input_type1
+      var2 <- input$input_type2
+      var3 <- input$input_type3
+      
+      if(input$radio=="cor"){
+        plot_title <- "Geographically Weighted Correlation"
+      }
+      else {
+        plot_title <- "Geographically Weighted Partial Correlation"
+      }
+      shapefile_selected <- cbind(shapefile_selected, data[[var1]])
+      shapefile_selected <- cbind(shapefile_selected, data[[var2]])
+      
+      for (control.variable in var3) {
+        shapefile_selected <- cbind(shapefile_selected, data[[control.variable]])
+      }
+      
+      var3.names <- c()
+      for (ind in 1:length(var3)) {
+        var3.names[ind] = paste0("var", ind+2)
+      }
+      
+      table.names <- c(c('val', 'var1', 'var2'), var3.names, c('geometry') )
+      colnames(shapefile_selected) <- table.names
+      
+      name.mapping <- c(c(var1), c(var2), c(var3))
+      
+      names(name.mapping) <- c(c('var1', 'var2'), var3.names)
+      
+      ncsd <- SharedData$new(shapefile_selected)
+      
+      output$title_panel = renderText(plot_title)
+      
+      output$map <- renderPlotly({
+        plot_mapbox(
+          source = "map",
+          ncsd,
+          split = ~cut(val, b = c(-1,-.8,-.6, -.4, -.2, 0, .2, .4, .6, .8, 1)),
+          stroke = ~I(pal1(val)),
+          color = ~val,
+          fillcolor = ~I(pal1(val)),
+          colors = "RdBu",
+          opacity = 0.1,
+          text = ~paste("GW coefficient: ", val),
+          showlegend = FALSE
+        ) %>%
+          highlight(color = "red") %>%
+          layout(
+            font = list(color='white'),
+            plot_bgcolor = '#191A1A',
+            paper_bgcolor = '#191A1A',
+            mapbox = list(style = 'dark',
+                          zoom = 8,
+                          center = list(lat = bounds$ymin + (bounds$ymax - bounds$ymin),
+                                        lon = bounds$xmin + (bounds$xmax - bounds$xmin))
+                          ),
+            margin = list(l = 25, r = 25, b = 25, t = 25, pad = 2)
           ) %>%
-            highlight(color = "red") %>%
+          hide_colorbar()
+      })
+      
+      output$plot <- renderPlotly({
+        if(input$radio=="cor") {
+          plt <- plot_ly(ncsd, x = ~var1, y = ~var2, text = ~paste('GW coefficient: ', val)
+                         # , height = 580
+          ) %>%
             layout(
               font = list(color='white'),
               plot_bgcolor = '#191A1A',
               paper_bgcolor = '#191A1A',
-              mapbox = list(style = 'dark',
-                            zoom = 11,
-                            center = list(lat = 2,
-                                          lon = 2)),
-              margin = list(l = 25, r = 25, b = 25, t = 25, pad = 2)
+              xaxis = list(title = names(which(varname==input$input_type1))),
+              yaxis = list(title = names(which(varname==input$input_type2)))
             ) %>%
-            hide_colorbar()
-        })
-        
-        output$plot <- renderPlotly({
-          if(input$radio=="cor") {
-            plt <- plot_ly(ncsd, x = ~var1, y = ~var2, text = ~paste('GW coefficient: ', val)
-                           # , height = 580
-                           ) %>%
-              layout(
-                font = list(color='white'),
-                plot_bgcolor = '#191A1A',
-                paper_bgcolor = '#191A1A',
-                xaxis = list(title = names(which(varname==input$input_type1))),
-                yaxis = list(title = names(which(varname==input$input_type2)))
-              ) %>%
-              add_trace(type = "scatter",
-                        mode = "markers",
-                        color = ~val,
-                        colors = rpal
-              ) %>%
-              colorbar(title = "Correlation Strength", limits = c(-1, 1), len = 0.9, nticks = 11) %>%
-              hide_colorbar() %>%
-              highlight("plotly_click", color = "red")
-          }
-          else {
-            
-            variables = table.names[2:(length(table.names)-1)]
-            variable.pairs <- combn(variables, 2, simplify=F)
-            
-            plt <- plot_ly(ncsd)
-            
-            for (i in 1:length(variable.pairs)) {
-              if (i == 1) {
-                var.x <- variable.pairs[[i]][1]
-                var.y <- variable.pairs[[i]][2]
-                plt = add_markers(plt,
-                                  colors = rpal,
-                                  color = ~val,
-                                  text = ~paste('GW coefficient: ', val),
-                                  x = shapefile_selected[[var.x]],
-                                  y = shapefile_selected[[var.y]],
-                                  showlegend = FALSE,
-                                  visible = T
-                )
-              }
-              else {
-                var.x <- variable.pairs[[i]][1]
-                var.y <- variable.pairs[[i]][2]
-                plt = add_markers(plt,
-                                  colors = rpal,
-                                  color = ~val,
-                                  text = ~paste('GW coefficient: ', val),
-                                  x = shapefile_selected[[var.x]],
-                                  y = shapefile_selected[[var.y]],
-                                  showlegend = FALSE,
-                                  visible = F
-                )
-              }
-              
+            add_trace(type = "scatter",
+                      mode = "markers",
+                      color = ~val,
+                      colors = rpal
+            ) %>%
+            colorbar(title = "Correlation Strength", limits = c(-1, 1), len = 0.9, nticks = 11) %>%
+            hide_colorbar() %>%
+            highlight("plotly_click", color = "red")
+        }
+        else {
+          
+          variables = table.names[2:(length(table.names)-1)]
+          variable.pairs <- combn(variables, 2, simplify=F)
+          
+          plt <- plot_ly(ncsd)
+          
+          for (i in 1:length(variable.pairs)) {
+            if (i == 1) {
+              var.x <- variable.pairs[[i]][1]
+              var.y <- variable.pairs[[i]][2]
+              plt = add_markers(plt,
+                                colors = rpal,
+                                color = ~val,
+                                text = ~paste('GW coefficient: ', val),
+                                x = shapefile_selected[[var.x]],
+                                y = shapefile_selected[[var.y]],
+                                showlegend = FALSE,
+                                visible = T
+              )
             }
-            
-            btns <- list()
-            
-            visibles <- list()
-            
-            for (i in 1:length(variable.pairs)) {
-              visibles[[i]] <- rep(F, length(variable.pairs))
-              visibles[[i]][i] <- T
-            }
-            
-            for (i in 1:length(variable.pairs)) {
-              if (i == 1) {
-                a <- list(list(visible = visibles[[i]]),
-                          list(xaxis = list(title = names(which(varname == substr(name.mapping[[variable.pairs[[i]][1]]], 1, nchar(name.mapping[[variable.pairs[[i]][1]]]) - 5))),
-                                            range = c(min(shapefile_selected[[2]]), max(shapefile_selected[[2]]) + (0.05 * max(shapefile_selected[[2]])) )),
-                               yaxis = list(title = names(which(varname == substr(name.mapping[[variable.pairs[[i]][2]]], 1, nchar(name.mapping[[variable.pairs[[i]][2]]]) - 5))),
-                                            range = c(min(shapefile_selected[[3]]), max(shapefile_selected[[3]]) + (0.05 * max(shapefile_selected[[3]])) ))
-                          )
-                )
-              }
-              else {
-                a <- list(list(visible = visibles[[i]]),
-                          list(xaxis = list(title = names(which(varname == substr(name.mapping[[variable.pairs[[i]][1]]], 1, nchar(name.mapping[[variable.pairs[[i]][1]]]) - 5))) ),
-                               yaxis = list(title = names(which(varname == substr(name.mapping[[variable.pairs[[i]][2]]], 1, nchar(name.mapping[[variable.pairs[[i]][2]]]) - 5))) )
-                          )
-                )
-              }
-              
-              btns[[i]] <- list(
-                method = "update",
-                args = a,
-                label = "X: " %+% names(which(varname == substr(name.mapping[[variable.pairs[[i]][1]]], 1, nchar(name.mapping[[variable.pairs[[i]][1]]]) - 5))) %+% "\n" %+%
-                  "Y: " %+% names(which(varname == substr(name.mapping[[variable.pairs[[i]][2]]], 1, nchar(name.mapping[[variable.pairs[[i]][2]]]) - 5)))
+            else {
+              var.x <- variable.pairs[[i]][1]
+              var.y <- variable.pairs[[i]][2]
+              plt = add_markers(plt,
+                                colors = rpal,
+                                color = ~val,
+                                text = ~paste('GW coefficient: ', val),
+                                x = shapefile_selected[[var.x]],
+                                y = shapefile_selected[[var.y]],
+                                showlegend = FALSE,
+                                visible = F
               )
             }
             
-            plt %>%
-              layout(
-                # height = 580,
-                font = list(color='white'),
-                plot_bgcolor = '#191A1A',
-                paper_bgcolor = '#191A1A',
-                xaxis = list(title = names(which(varname == substr(name.mapping[[variable.pairs[[1]][1]]], 1, nchar(name.mapping[[variable.pairs[[1]][1]]]) - 5))),
-                             range = c(min(shapefile_selected[[2]]), max(shapefile_selected[[2]]) + (0.05 * max(shapefile_selected[[2]])) )),
-                yaxis = list(title = names(which(varname == substr(name.mapping[[variable.pairs[[1]][2]]], 1, nchar(name.mapping[[variable.pairs[[1]][2]]]) - 5))),
-                             range = c(min(shapefile_selected[[3]]), max(shapefile_selected[[3]]) + (0.05 * max(shapefile_selected[[3]])) )),
-                updatemenus = list(
-                  list(
-                    x = 1,
-                    buttons = btns
-                  )
-                )
-              ) %>%
-              colorbar(title = "Correlation Strength", limits = c(-1, 1), len = 0.9, nticks = 11) %>%
-              hide_colorbar() %>%
-              highlight("plotly_click", color = "red")
           }
-        })
-        
-      }
+          
+          btns <- list()
+          
+          visibles <- list()
+          
+          for (i in 1:length(variable.pairs)) {
+            visibles[[i]] <- rep(F, length(variable.pairs))
+            visibles[[i]][i] <- T
+          }
+          
+          for (i in 1:length(variable.pairs)) {
+            if (i == 1) {
+              a <- list(list(visible = visibles[[i]]),
+                        list(xaxis = list(title = names(which(varname == substr(name.mapping[[variable.pairs[[i]][1]]], 1, nchar(name.mapping[[variable.pairs[[i]][1]]]) - 5))),
+                                          range = c(min(shapefile_selected[[2]]), max(shapefile_selected[[2]]) + (0.05 * max(shapefile_selected[[2]])) )),
+                             yaxis = list(title = names(which(varname == substr(name.mapping[[variable.pairs[[i]][2]]], 1, nchar(name.mapping[[variable.pairs[[i]][2]]]) - 5))),
+                                          range = c(min(shapefile_selected[[3]]), max(shapefile_selected[[3]]) + (0.05 * max(shapefile_selected[[3]])) ))
+                        )
+              )
+            }
+            else {
+              a <- list(list(visible = visibles[[i]]),
+                        list(xaxis = list(title = names(which(varname == substr(name.mapping[[variable.pairs[[i]][1]]], 1, nchar(name.mapping[[variable.pairs[[i]][1]]]) - 5))) ),
+                             yaxis = list(title = names(which(varname == substr(name.mapping[[variable.pairs[[i]][2]]], 1, nchar(name.mapping[[variable.pairs[[i]][2]]]) - 5))) )
+                        )
+              )
+            }
+            
+            btns[[i]] <- list(
+              method = "update",
+              args = a,
+              label = "X: " %+% names(which(varname == substr(name.mapping[[variable.pairs[[i]][1]]], 1, nchar(name.mapping[[variable.pairs[[i]][1]]]) - 5))) %+% "\n" %+%
+                "Y: " %+% names(which(varname == substr(name.mapping[[variable.pairs[[i]][2]]], 1, nchar(name.mapping[[variable.pairs[[i]][2]]]) - 5)))
+            )
+          }
+          
+          plt %>%
+            layout(
+              # height = 580,
+              font = list(color='white'),
+              plot_bgcolor = '#191A1A',
+              paper_bgcolor = '#191A1A',
+              xaxis = list(title = names(which(varname == substr(name.mapping[[variable.pairs[[1]][1]]], 1, nchar(name.mapping[[variable.pairs[[1]][1]]]) - 5))),
+                           range = c(min(shapefile_selected[[2]]), max(shapefile_selected[[2]]) + (0.05 * max(shapefile_selected[[2]])) )),
+              yaxis = list(title = names(which(varname == substr(name.mapping[[variable.pairs[[1]][2]]], 1, nchar(name.mapping[[variable.pairs[[1]][2]]]) - 5))),
+                           range = c(min(shapefile_selected[[3]]), max(shapefile_selected[[3]]) + (0.05 * max(shapefile_selected[[3]])) )),
+              updatemenus = list(
+                list(
+                  x = 1,
+                  buttons = btns
+                )
+              )
+            ) %>%
+            colorbar(title = "Correlation Strength", limits = c(-1, 1), len = 0.9, nticks = 11) %>%
+            hide_colorbar() %>%
+            highlight("plotly_click", color = "red")
+        }
+      })
       
     }
     
-
+    
+    
   })
 }
 
