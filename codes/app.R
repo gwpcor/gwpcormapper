@@ -29,10 +29,6 @@ ui <- dashboardPage(
               placeholder = "No file selected",
               multiple = FALSE,
               accept = c(".gpkg")),
-    fileInput("file2", NULL,
-              buttonLabel = "Load dMat",
-              multiple = FALSE,
-              accept = c(".RDS")),
     radioButtons(inputId = "radio", label = "Type",
                  choices = list("GW correlation" = "cor",
                                 "GW partial correlation" = "pcor"),
@@ -68,8 +64,8 @@ ui <- dashboardPage(
   )),
   dashboardBody(
     tags$head(
-      tags$style("#map {height: 100vh !important; padding: 0; margin: 0;}"),
-      tags$style("#plot {height: 100vh !important; padding: 0; margin: 0;}"),
+      tags$style("#map {height: calc(100vh - 60px) !important; padding: 0; margin: 0;}"),
+      tags$style("#plot {height: calc(100vh - 60px) !important; padding: 0; margin: 0;}"),
       tags$style(".shiny-notification {position: fixed; top: 50% ;left: 50%}"),
       tags$style(".shiny-input-container {padding: 0; margin: 0;}"),
       tags$style("#file1_progress {padding: 0; margin: 0;}"),
@@ -78,6 +74,7 @@ ui <- dashboardPage(
         div.col-sm-7 {padding: 0}
         div.col-sm-5 {padding: 0}
         .content {padding: 0}
+        .content-wrapper {background-color: #191A1A}
         "))
       ),
     # fluidRow(
@@ -118,6 +115,15 @@ server <- function(input, output, session) {
   observeEvent(input$file1, {
     data <<- sf::st_read(input$file1$datapath) %>% st_transform(.,4326)
     
+    withProgress(message = 'Building distance matrix',
+                 detail = '...', value = 1, {
+      sp.locat <- sf::st_centroid(data) %>% sf::st_coordinates(.)
+      dp.locat <- sf::st_centroid(data) %>% sf::st_coordinates(.)
+      
+      dMat <<- gw.dist(dp.locat = dp.locat, rp.locat = sp.locat, 
+                       p = 2, theta = 0, longlat = F)
+                 })
+    
     tokyo2005 <- data
     st_geometry(tokyo2005) <- NULL
     num_row <<- nrow(tokyo2005)
@@ -142,10 +148,6 @@ server <- function(input, output, session) {
                       choices = varname,
                       selected = varname[3]
     )
-  })
-  
-  observeEvent(input$file2, {
-    dMat <<- readRDS(input$file2$datapath)
   })
   
   observe({
@@ -197,7 +199,7 @@ server <- function(input, output, session) {
   })
   
   observeEvent(input$submit, {
-    if(is.null(input$file1) | is.null(input$file2)){
+    if(is.null(input$file1)){
       showModal(modalDialog(
         title = "Missing data!",
         "Please load your dataset and distance matrix file."
