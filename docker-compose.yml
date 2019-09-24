@@ -6,6 +6,9 @@ services:
     volumes:
       - ./codes:/home/rstudio/ShinyApps
     environment:
-      PASSWORD: passwd
+      - PASSWORD=passwd 
+      - MAPBOX_TOKEN=${MAPBOX_TOKEN}
+    entrypoint: /home/rstudio/entry.sh
+    command: /init
     ports:
       - "80:8787"

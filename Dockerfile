@@ -1,4 +1,4 @@
-FROM rocker/geospatial:3.5.2
+FROM rocker/geospatial:3.6.1
 RUN Rscript -e "install.packages(c('shiny', 'shinythemes','shinydashboard','remotes','leaflet','corpcor','doParallel','here','spdplyr','GWmodel', 'plotly'), repos='http://cran.rstudio.com/')"
 RUN Rscript -e "remotes::install_github('naru-T/MyRMiscFunc')"
 
@@ -6,9 +6,11 @@ RUN mkdir -p /home/rstudio/ShinyApps
 WORKDIR /home/rstudio/ShinyApps/
 RUN chown rstudio:rstudio -R /home/rstudio/ShinyApps
 RUN chmod -R 775 /home/rstudio/ShinyApps
-COPY ./codes/shiny_code.R /home/rstudio/ShinyApps/
-RUN chmod -R 775 /home/rstudio/ShinyApps/shiny_code.R
-RUN chown rstudio:rstudio -R /home/rstudio/ShinyApps/shiny_code.R
+COPY ./codes/app.R /home/rstudio/ShinyApps/
+COPY ./entry.sh /home/rstudio/entry.sh
+RUN chmod -R 775 /home/rstudio/ShinyApps/app.R
+RUN chmod -R 775 /home/rstudio/entry.sh
+RUN chown rstudio:rstudio -R /home/rstudio/ShinyApps/app.R
 
 
 RUN mkdir -p /home/rstudio/pkg
