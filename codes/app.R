@@ -330,8 +330,10 @@ server <- function(input, output, session) {
             font = list(color='white'),
             plot_bgcolor = '#191A1A',
             paper_bgcolor = '#191A1A',
-            xaxis = list(title = names(which(varname==input$input_type1))),
-            yaxis = list(title = names(which(varname==input$input_type2)))
+            xaxis = list(title = input$input_type1),
+            yaxis = list(title = input$input_type2)
+            # xaxis = list(title = names(which(varname==input$input_type1))),
+            # yaxis = list(title = names(which(varname==input$input_type2)))
           ) %>%
           add_trace(type = "scatter",
                     mode = "markers",
@@ -387,17 +389,20 @@ server <- function(input, output, session) {
           visibles[[i]] <- rep(F, length(variable.pairs))
           visibles[[i]][i] <- T
         }
-
+        
         for (i in 1:length(variable.pairs)) {
           if (i == 1) {
             a <- list(list(visible = visibles[[i]]),
-                      list(xaxis = list(title = names(which(varname == substr(name.mapping[[variable.pairs[[i]][1]]], 1, nchar(name.mapping[[variable.pairs[[i]][1]]]) - 5))),
-                                        range = c(min(shapefile_selected[[2]]), max(shapefile_selected[[2]]) + (0.05 * max(shapefile_selected[[2]])) )),
-                           yaxis = list(title = names(which(varname == substr(name.mapping[[variable.pairs[[i]][2]]], 1, nchar(name.mapping[[variable.pairs[[i]][2]]]) - 5))),
+                      list(xaxis = list(title = name.mapping[[variable.pairs[[i]][1]]],
+                                        range = c(min(shapefile_selected[[2]]), max(shapefile_selected[[2]]) + (0.05 * max(shapefile_selected[[2]])) )
+                                        ),
+                           yaxis = list(title = name.mapping[[variable.pairs[[i]][2]]],
                                         range = c(min(shapefile_selected[[3]]), max(shapefile_selected[[3]]) + (0.05 * max(shapefile_selected[[3]])) ))
                       )
             )
           }
+          
+          
           else {
             a <- list(list(visible = visibles[[i]]),
                       list(xaxis = list(title = names(which(varname == substr(name.mapping[[variable.pairs[[i]][1]]], 1, nchar(name.mapping[[variable.pairs[[i]][1]]]) - 5))) ),
@@ -405,12 +410,12 @@ server <- function(input, output, session) {
                       )
             )
           }
-
+          
           btns[[i]] <- list(
             method = "update",
             args = a,
-            label = "X: " %+% names(which(varname == substr(name.mapping[[variable.pairs[[i]][1]]], 1, nchar(name.mapping[[variable.pairs[[i]][1]]]) - 5))) %+% "\n" %+%
-              "Y: " %+% names(which(varname == substr(name.mapping[[variable.pairs[[i]][2]]], 1, nchar(name.mapping[[variable.pairs[[i]][2]]]) - 5)))
+            label = "X: " %+% name.mapping[[variable.pairs[[i]][1]]] %+% "\n" %+%
+              "Y: " %+% name.mapping[[variable.pairs[[i]][2]]]
           )
         }
 
@@ -419,9 +424,9 @@ server <- function(input, output, session) {
             font = list(color='white'),
             plot_bgcolor = '#191A1A',
             paper_bgcolor = '#191A1A',
-            xaxis = list(title = names(which(varname == substr(name.mapping[[variable.pairs[[1]][1]]], 1, nchar(name.mapping[[variable.pairs[[1]][1]]]) - 5))),
+            xaxis = list(title = name.mapping[[variable.pairs[[1]][1]]],
                          range = c(min(shapefile_selected[[2]]), max(shapefile_selected[[2]]) + (0.05 * max(shapefile_selected[[2]])) )),
-            yaxis = list(title = names(which(varname == substr(name.mapping[[variable.pairs[[1]][2]]], 1, nchar(name.mapping[[variable.pairs[[1]][2]]]) - 5))),
+            yaxis = list(title = name.mapping[[variable.pairs[[1]][2]]],
                          range = c(min(shapefile_selected[[3]]), max(shapefile_selected[[3]]) + (0.05 * max(shapefile_selected[[3]])) )),
             updatemenus = list(
               list(
