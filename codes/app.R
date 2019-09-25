@@ -19,7 +19,7 @@ library(doParallel)
 
 # gwpcor function for parallel computing
 # core registraion functions were extract outside from gwpcor::gwpcor function due to the suspicion of the slow processing
-source(here("gwpcor_parallel_func.R"))
+source(here("/ShinyApps/gwpcor_parallel_func.R"))
 
 ui <- dashboardPage(
   dashboardHeader(title = "gwpcorMapper"),
@@ -231,8 +231,8 @@ server <- function(input, output, session) {
                             vn <- "corr_" %+% input$input_type1 %+% "." %+% input$input_type2,
                             vn <- "scorr_" %+% input$input_type1 %+% "." %+% input$input_type2)
                      
-                     cl <- makeCluster(detectCores())
-                     registerDoParallel(cl)
+                     #cl <- makeCluster(detectCores())
+                     #registerDoParallel(cl)
                      
                      shapefile <- gwpcor_calc(sdata = data,
                                               var1 = input$input_type1,
@@ -243,15 +243,15 @@ server <- function(input, output, session) {
                                               b = as.integer(input$slider * num_row),
                                               dMat = dMat
                      )
-                     stopCluster(cl)
+                     #stopCluster(cl)
                    } else{
                      
                      ifelse(input$radio2=="pearson",
                             vn <- "pcorr_" %+% input$input_type1 %+% "." %+% input$input_type2,
                             vn <- "spcorr_" %+% input$input_type1 %+% "." %+% input$input_type2)
                      
-                     cl <- makeCluster(detectCores())
-                     registerDoParallel(cl)
+                     #cl <- makeCluster(detectCores())
+                     #registerDoParallel(cl)
                      shapefile <- gwpcor_calc(sdata = data,
                                               var1 = input$input_type1,
                                               var2 = input$input_type2,
@@ -260,7 +260,7 @@ server <- function(input, output, session) {
                                               kernel = input$input_type4,
                                               b = as.integer(input$slider * num_row),
                                               dMat = dMat)
-                     stopCluster(cl)
+                     #stopCluster(cl)
                    }
                    
                    shapefile_selected <- shapefile %>% dplyr::select(vn)
@@ -446,7 +446,10 @@ server <- function(input, output, session) {
   })
 }
 
+cl <- makeCluster(detectCores())
+registerDoParallel(cl -1)
 
 shinyApp(ui, server)
 
+stopCluster(cl)
 
