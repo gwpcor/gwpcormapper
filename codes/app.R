@@ -446,8 +446,8 @@ server <- function(input, output, session) {
   })
 }
 
-cl <- makeCluster(detectCores())
-registerDoParallel(cl -1)
+cl <- makeCluster(detectCores() -1)
+registerDoParallel(cl)
 
 shinyApp(ui, server)
 
