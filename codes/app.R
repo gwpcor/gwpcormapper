@@ -124,11 +124,10 @@ server <- function(input, output, session) {
                        p = 2, theta = 0, longlat = F)
                  })
     
-    tokyo2005 <- data
-    st_geometry(tokyo2005) <- NULL
-    num_row <<- nrow(tokyo2005)
-    
-    varname <<- colnames(tokyo2005)
+   
+    num_row <<- nrow(data)
+    data <<- data %>% dplyr::mutate(dummy=1:num_row)
+    varname <<- colnames(data)
     
     
     updateSelectInput(session, "input_type1",
@@ -146,7 +145,7 @@ server <- function(input, output, session) {
     updateSelectInput(session, "input_type3",
                       label = "Control variable",
                       choices = varname,
-                      selected = varname[3]
+                      selected = "dummy",
     )
   })
   
