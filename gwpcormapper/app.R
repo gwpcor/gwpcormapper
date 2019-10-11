@@ -47,7 +47,7 @@ ui <- dashboardPage(
     conditionalPanel(
       condition = "input.radio == 'pcor'",
       selectInput(inputId = "input_type3",
-                  label = "Control variable",
+                  label = "Control variables",
                   choices = '',
                   multiple = TRUE)
     ),
@@ -147,7 +147,7 @@ server <- function(input, output, session) {
                       selected = varname[2]
     )
     updateSelectInput(session, "input_type3",
-                        label = "Control variable",
+                        label = "Control variables",
                         choices = varname
       )
   })
@@ -336,8 +336,7 @@ server <- function(input, output, session) {
                     color = ~val,
                     colors = rpal
           ) %>%
-          colorbar(title = "Correlation Strength", limits = c(-1, 1), len = 0.9, nticks = 11) %>%
-          hide_colorbar() %>%
+          colorbar(title = "Correlation\nCoefficient", limits = c(-1, 1), len = 0.9, nticks = 11) %>%
           highlight("plotly_click", color = "red")
       }
       else {
@@ -431,8 +430,7 @@ server <- function(input, output, session) {
               )
             )
           ) %>%
-          colorbar(title = "Correlation Strength", limits = c(-1, 1), len = 0.9, nticks = 11) %>%
-          hide_colorbar() %>%
+          colorbar(title = "Correlation\nCoefficient", limits = c(-1, 1), len = 0.9, nticks = 11) %>%
           highlight("plotly_click", color = "red")
       }
 
