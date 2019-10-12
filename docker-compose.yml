@@ -10,7 +10,7 @@ services:
     user: 'root'
     environment:
       - MAPBOX_TOKEN=${MAPBOX_TOKEN}
-      - PASSWORD=${PASSWORD}
+      - PASSWORD=passwd
     ports:
       - '80:3838'
     volumes:
