@@ -1,11 +1,23 @@
-version: '3.7'
+version: "3.7"
 
 services:
-  app:
-    build: .
-    volumes:
-      - ./codes:/home/rstudio/ShinyApps
+  shiny:
+    container_name: gwpcormapper
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: always
+    user: 'root'
     environment:
-      PASSWORD: passwd
+      - MAPBOX_TOKEN=${MAPBOX_TOKEN}
+      - PASSWORD=passwd
     ports:
-      - "80:8787"
+      - '80:3838'
+    volumes:
+      - 'shiny_logs:/var/log/shiny-server'
+      - './gwpcormapper:/srv/shiny-server'
+      # - 'shiny_apps:/srv/shiny-server'
+
+volumes:
+  shiny_logs:
+#  shiny_apps:
