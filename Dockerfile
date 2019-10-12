@@ -2,6 +2,13 @@ FROM rocker/geospatial:3.6.1
 RUN Rscript -e "install.packages(c('shiny', 'shinyjs', 'shinythemes','shinydashboard','remotes','leaflet','corpcor','doParallel','here','spdplyr','GWmodel', 'plotly'), repos='http://cran.rstudio.com/')"
 RUN Rscript -e "remotes::install_github('naru-T/MyRMiscFunc')"
 
+
+ARG PASSWORD=password
+ARG MAPBOX_TOKEN=token
+
+ENV PASSWORD=${PASSWORD}
+ENV MAPBOX_TOKEN=${MAPBOX_TOKEN}
+
 COPY shiny-server.sh /usr/bin/shiny-server.sh
 RUN chmod +x /usr/bin/shiny-server.sh
 
