@@ -61,7 +61,9 @@ ui <- dashboardPage(
                 selected = "bisquare"),
     sliderInput("slider", "Adaptive kernel size:", 0.1, 1, 0.25),
     actionButton("submit", "Map Results", icon("map"), 
-                 style="color: #fff; background-color: #337ab7; border-color: #2e6da4; width: 85%")
+                 style="color: #fff; background-color: #337ab7; border-color: #2e6da4; width: 85%"),
+    hr(),
+    sliderInput("slider2", "Map opacity:", 0.1, 1, 0.1)
   )),
   dashboardBody(
     useShinyjs(),
@@ -300,7 +302,8 @@ server <- function(input, output, session) {
         color = ~val,
         fillcolor = ~I(pal1(val)),
         colors = "RdBu",
-        opacity = 0.1,
+        # opacity = 0.1,
+        opacity = as.integer(input$slider2),
         text = ~paste("GW coefficient: ", val),
         showlegend = FALSE
       ) %>%
