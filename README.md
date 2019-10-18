@@ -25,7 +25,7 @@ docker pull iosefa/gwpcormapper:latest
 docker-compose up -d
 ```
 
-Now, open a web browser and go to [localhost:80](localhost:80) and you are all set!
+Now, open a web browser and go to [localhost:80](http://localhost:80) and you are all set!
 
 To shut down the container:
 ```bash
