@@ -2,15 +2,16 @@ version: "3.7"
 
 services:
   shiny:
+    image: iosefa/gwpcormapper
     container_name: gwpcormapper
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        - MAPBOX_TOKEN=${MAPBOX_TOKEN}
+        - PASSWORD=passwd
     restart: always
     user: 'root'
-    environment:
-      - MAPBOX_TOKEN=${MAPBOX_TOKEN}
-      - PASSWORD=passwd
     ports:
       - '80:3838'
     volumes:
