@@ -2,6 +2,7 @@ version: "3.7"
 
 services:
   shiny:
+    image: iosefa/gwpcormapper
     container_name: gwpcormapper
     build:
       context: .
