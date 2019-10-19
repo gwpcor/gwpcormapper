@@ -17,19 +17,19 @@ on your system.
 1. Pull the docker containers from Docker hub (in a terminal):
 
 ```bash 
-docker pull iosefa/gwpcormapper:latest
+docker pull iosefa/gwpcormapper
 ```
 
 2. Start the container: 
 ```bash
-docker-compose up -d
+docker run -p 80:3838 iosefa/gwpcormapper
 ```
 
-Now, open a web browser and go to [localhost:80](http://localhost:80) and you are all set!
+Now, open a web browser and go to [localhost](http://localhost:80) and you are all set!
 
 To shut down the container:
 ```bash
-docker-compose down
+docker stop iosefa/gwpcormapper
 ```
 
 ### Documentation:
@@ -37,8 +37,19 @@ docker-compose down
 
 ## Development version:
 
-If you would like to use the latest development version, you just need to clone this repository, switch the the `development` branch
-and build the docker containers and compose up by running `docker-compose up --b -d`.
+If you would like to use the latest development version:
+1. clone this repository
+2. switch to the `develop` branch.
+3. in the repository directory, run: 
+
+```bash
+docker-compose up -d
+```
+to start the program, and:
+```bash
+docker-compose down
+```
+to shut down the program.
 
 
 ## To contribute
