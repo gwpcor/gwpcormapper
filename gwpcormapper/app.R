@@ -60,7 +60,7 @@ ui <- dashboardPage(
                                 "Box-car" = "boxcar"),
                 selected = "bisquare"),
     sliderInput("slider", "Adaptive kernel size:", 0.1, 1, 0.25),
-    actionButton("submit", "Map Results", icon("map"), 
+    actionButton("submit", "Map Results", icon("map"),
                  style="color: #fff; background-color: #337ab7; border-color: #2e6da4; width: 85%"),
     hr(),
     sliderInput("slider2", "Map opacity:", 0.1, 1, 0.1)
