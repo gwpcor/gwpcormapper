@@ -17,6 +17,3 @@ services:
     volumes:
       - 'shiny_logs:/var/log/shiny-server'
       - './gwpcormapper:/srv/shiny-server'
-
-volumes:
-  shiny_logs:

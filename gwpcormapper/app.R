@@ -123,7 +123,7 @@ server <- function(input, output, session) {
     }
     )
 
-
+    
     num_row <<- nrow(data)
 
     dummy <- 1:num_row
@@ -264,61 +264,81 @@ server <- function(input, output, session) {
                                               b = as.integer(input$slider * num_row),
                                               dMat = dMat)
                    }
-                   
-                   shapefile_selected <- shapefile %>% 
-                                            dplyr::rename(val = vn) %>%
-                                            dplyr::mutate(var1 = data[[var1]],
-                                                          var2 = data[[var2]]) %>%
-                                            dplyr::select(val,var1,var2)
-                   
+                  vn2 <- "corr_pval_" %+% var1 %+% "." %+% var2
+                  shapefile_selected <- shapefile %>%
+                                              dplyr::rename(val = vn) %>%
+                                              dplyr::rename(val2 = vn2) %>%
+                                              dplyr::mutate(var1 = data[[var1]],
+                                                            var2 = data[[var2]]) %>%
+                                              dplyr::select(val, val2, var1, var2)
                    for (control.variable in var3) {
                      shapefile_selected <- cbind(shapefile_selected, data[[control.variable]])
                    }
 
                    var3.names <- "var" %+% 3:(2+length(var3))
 
-                   table.names <- c(c('val', 'var1', 'var2'), var3.names, 'geometry')
+                   table.names <- c(c('val', 'val2', 'var1', 'var2'), var3.names, c('geometry') )
                    colnames(shapefile_selected) <- table.names
                    
                    name.mapping <- c(var1, var2, var3)
                    
                    names(name.mapping) <- c(c('var1', 'var2'), var3.names)
                    
-                   ncsd <- SharedData$new(shapefile_selected)   
-  
+                   ncsd <- SharedData$new(shapefile_selected)
+
+                   ncsd.pv01 <- SharedData$new(shapefile_selected[shapefile_selected$val2 <= 0.01,])
+                   ncsd.pv05 <- SharedData$new(shapefile_selected[shapefile_selected$val2 <= 0.05,])
                  })
-    
-    
-    
-    
+
     output$map <- renderPlotly({
       plot_mapbox(
-        source = "map",
-        ncsd,
+        source = "map"
+      ) %>%
+      add_sf(
+        inherit = FALSE,
+        data = ncsd.pv01,
+        opacity = 1,
+        name = 'p-values ≤ 0.01',
+        stroke = I('white'),
+        fillcolor = 'white',
+        showlegend = TRUE,
+        visible='legendonly'
+      ) %>%
+      add_sf(
+        inherit = FALSE,
+        data = ncsd.pv05,
+        opacity = 1,
+        name = 'p-values ≤ 0.05',
+        stroke = I('white'),
+        fillcolor = 'white',
+        showlegend = TRUE,
+        visible='legendonly'
+      ) %>%
+      add_sf(
+        inherit = FALSE,
+        data = ncsd,
         split = ~cut(val, b = c(-1,-.8,-.6, -.4, -.2, 0, .2, .4, .6, .8, 1)),
         stroke = ~I(pal1(val)),
-        color = ~val,
         fillcolor = ~I(pal1(val)),
         colors = "RdBu",
-        # opacity = 0.1,
         opacity = as.integer(input$slider2),
-        text = ~paste("GW coefficient: ", val),
+        text = ~val,
         showlegend = FALSE
       ) %>%
-        highlight(color = "red") %>%
-        layout(
-          font = list(color='white'),
-          plot_bgcolor = '#191A1A',
-          paper_bgcolor = '#191A1A',
-          mapbox = list(style = 'dark',
-                        zoom = 8,
-                        center = list(lat = bounds$ymin + (bounds$ymax - bounds$ymin),
-                                      lon = bounds$xmin + (bounds$xmax - bounds$xmin))
-                        ),
-          margin = list(l = 25, r = 25, b = 25, t = 25, pad = 2)
-        ) %>%
-        hide_colorbar()
-      
+      highlight(color = "red") %>%
+      layout(
+        font = list(color='white'),
+        plot_bgcolor = '#191A1A',
+        paper_bgcolor = '#191A1A',
+        mapbox = list(
+                      style = 'dark',
+                      zoom = 8,
+                      center = list(lat = bounds$ymin + (bounds$ymax - bounds$ymin),
+                                    lon = bounds$xmin + (bounds$xmax - bounds$xmin))
+                      ),
+        margin = list(l = 25, r = 25, b = 25, t = 25, pad = 2)
+      ) %>%
+      hide_colorbar()
     })
     
     output$plot <- renderPlotly({
