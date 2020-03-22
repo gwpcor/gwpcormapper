@@ -210,136 +210,137 @@ server <- function(input, output, session) {
     bounds <- st_bbox(data)
     
     
-    withProgress(message = 'Calculating GW statistics',
-                 detail = 'This may take a while...', value = 1, {
-                   
-                   rpal <- brewer.pal(n = 8, name = "RdBu")
-                   pal1 <- colorBin("RdBu",
-                                    c(-1,1),
-                                    bins=11 ,
-                                    na.color = "#bdbdbd"
-                   )
-                   
-                   var1 <- input$input_type1
-                   var2 <- input$input_type2
-                  if (is.null(input$input_type3)) {
-                    var3 <- "dummy"
-                  }
-                  else{
-                    var3 <- input$input_type3
-                  }
-                   
-                   if(input$radio=="cor"){
- 
-                     vn <- ifelse(input$radio2=="pearson",
-                            "corr_" %+% var1 %+% "." %+% var2,
-                            "scorr_" %+% var1 %+% "." %+% var2)
-                    start.time <- Sys.time()
-                     shapefile <- gwpcor_calc(sdata = data,
-                                              var1 = var1,
-                                              var2 = var2,
-                                              var3 = var3,
-                                              method = input$radio2,
-                                              kernel = input$input_type4,
-                                              b = as.integer(input$slider * num_row),
-                                              dMat = dMat
-                     )
+    withProgress(
+      message = 'Calculating GW statistics',
+      detail = 'This may take a while...',
+      value = 1,
+      {
+        rpal <- brewer.pal(n = 8, name = "RdBu")
+        pal1 <- colorBin("RdBu", c(-1,1), bins=11, na.color = "#bdbdbd")
+        var1 <- input$input_type1
+        var2 <- input$input_type2
+        if (is.null(input$input_type3)) {
+          var3 <- "dummy"
+        }
+        else{
+          var3 <- input$input_type3
+        }
+        if(input$radio=="cor"){
+          if(input$radio2=="pearson") {
+            vn <- "corr_" %+% var1 %+% "." %+% var2,
+            vn2 <- "corr_pval_" %+% var1 %+% "." %+% var2
+          }
+          else {
+            vn <- "scorr_" %+% var1 %+% "." %+% var2)
+            vn2 <- "scorr_pval_" %+% var1 %+% "." %+% var2
+          }
+          start.time <- Sys.time()
+          shapefile <- gwpcor_calc(
+            sdata = data,
+            var1 = var1,
+            var2 = var2,
+            var3 = var3,
+            method = input$radio2,
+            kernel = input$input_type4,
+            b = as.integer(input$slider * num_row),
+            dMat = dMat
+          )
+          end.time <- Sys.time()
+          time.taken <- end.time - start.time
+          shinyjs::logjs(time.taken)
+        }
+        else {
+          if(input$radio2=="pearson") {
+            vn <- "pcorr_" %+% var1 %+% "." %+% var2,
+            vn2 <- "pcorr_pval_" %+% var1 %+% "." %+% var2
+          }
+          else {
+            vn <- "spcorr_" %+% var1 %+% "." %+% var2)
+            vn2 <- "spcorr_pval_" %+% var1 %+% "." %+% var2
+          }
+          shapefile <- gwpcor_calc(sdata = data,
+          var1 = var1,
+          var2 = var2,
+          var3 = var3,
+          method = input$radio2,
+          kernel = input$input_type4,
+          b = as.integer(input$slider * num_row),
+          dMat = dMat)
+        }
+        shapefile_selected <- shapefile %>%
+          dplyr::rename(val = vn) %>%
+          dplyr::rename(val2 = vn2) %>%
+          dplyr::mutate(var1 = data[[var1]],
+        var2 = data[[var2]]) %>%
+          dplyr::select(val, val2, var1, var2)
+        for (control.variable in var3) {
+          shapefile_selected <- cbind(shapefile_selected, data[[control.variable]])
+        }
+        var3.names <- "var" %+% 3:(2+length(var3))
+        table.names <- c(c('val', 'val2', 'var1', 'var2'), var3.names, c('geometry') )
+        colnames(shapefile_selected) <- table.names
+        name.mapping <- c(c(var1), c(var2), c(var3))
+        names(name.mapping) <- c(c('var1', 'var2'), var3.names)
+        ncsd <- SharedData$new(shapefile_selected)
+        ncsd.pv01 <- SharedData$new(shapefile_selected[shapefile_selected$val2 <= 0.01,])
+        ncsd.pv05 <- SharedData$new(shapefile_selected[shapefile_selected$val2 <= 0.05,])
+      }
+    )
 
-                    end.time <- Sys.time()
-                    time.taken <- end.time - start.time
-                    shinyjs::logjs(time.taken)
-
-                   } else {
-                     
-                     vn <- ifelse(input$radio2=="pearson",
-                            "pcorr_" %+% var1 %+% "." %+% var2,
-                            "spcorr_" %+% var1 %+% "." %+% var2)
-                     
-                     shapefile <- gwpcor_calc(sdata = data,
-                                              var1 = var1,
-                                              var2 = var2,
-                                              var3 = var3,
-                                              method = input$radio2,
-                                              kernel = input$input_type4,
-                                              b = as.integer(input$slider * num_row),
-                                              dMat = dMat)
-                   }
-                  vn2 <- "corr_pval_" %+% var1 %+% "." %+% var2
-                  shapefile_selected <- shapefile %>%
-                                              dplyr::rename(val = vn) %>%
-                                              dplyr::rename(val2 = vn2) %>%
-                                              dplyr::mutate(var1 = data[[var1]],
-                                                            var2 = data[[var2]]) %>%
-                                              dplyr::select(val, val2, var1, var2)
-                   for (control.variable in var3) {
-                     shapefile_selected <- cbind(shapefile_selected, data[[control.variable]])
-                   }
-
-                   var3.names <- "var" %+% 3:(2+length(var3))
-
-                   table.names <- c(c('val', 'val2', 'var1', 'var2'), var3.names, c('geometry') )
-                   colnames(shapefile_selected) <- table.names
-                   
-                   name.mapping <- c(var1, var2, var3)
-                   
-                   names(name.mapping) <- c(c('var1', 'var2'), var3.names)
-                   
-                   ncsd <- SharedData$new(shapefile_selected)
-
-                   ncsd.pv01 <- SharedData$new(shapefile_selected[shapefile_selected$val2 <= 0.01,])
-                   ncsd.pv05 <- SharedData$new(shapefile_selected[shapefile_selected$val2 <= 0.05,])
-                 })
-
-    output$map <- renderPlotly({
-      plot_mapbox(
-        source = "map"
-      ) %>%
-      add_sf(
-        inherit = FALSE,
-        data = ncsd.pv01,
-        opacity = 1,
-        name = 'p-values ≤ 0.01',
-        stroke = I('white'),
-        fillcolor = 'white',
-        showlegend = TRUE,
-        visible='legendonly'
-      ) %>%
-      add_sf(
-        inherit = FALSE,
-        data = ncsd.pv05,
-        opacity = 1,
-        name = 'p-values ≤ 0.05',
-        stroke = I('white'),
-        fillcolor = 'white',
-        showlegend = TRUE,
-        visible='legendonly'
-      ) %>%
-      add_sf(
-        inherit = FALSE,
-        data = ncsd,
-        split = ~cut(val, b = c(-1,-.8,-.6, -.4, -.2, 0, .2, .4, .6, .8, 1)),
-        stroke = ~I(pal1(val)),
-        fillcolor = ~I(pal1(val)),
-        colors = "RdBu",
-        opacity = as.integer(input$slider2),
-        text = ~val,
-        showlegend = FALSE
-      ) %>%
-      highlight(color = "red") %>%
-      layout(
-        font = list(color='white'),
-        plot_bgcolor = '#191A1A',
-        paper_bgcolor = '#191A1A',
-        mapbox = list(
-                      style = 'dark',
-                      zoom = 8,
-                      center = list(lat = bounds$ymin + (bounds$ymax - bounds$ymin),
-                                    lon = bounds$xmin + (bounds$xmax - bounds$xmin))
-                      ),
-        margin = list(l = 25, r = 25, b = 25, t = 25, pad = 2)
-      ) %>%
-      hide_colorbar()
-    })
+    output$map <- renderPlotly(
+      {
+        plot_mapbox(
+          source = "map"
+        ) %>%
+        add_sf(
+          inherit = FALSE,
+          data = ncsd.pv01,
+          opacity = 1,
+          name = 'p-values ≤ 0.01',
+          stroke = I('white'),
+          fillcolor = 'white',
+          showlegend = TRUE,
+          visible='legendonly'
+        ) %>%
+        add_sf(
+          inherit = FALSE,
+          data = ncsd.pv05,
+          opacity = 1,
+          name = 'p-values ≤ 0.05',
+          stroke = I('white'),
+          fillcolor = 'white',
+          showlegend = TRUE,
+          visible='legendonly'
+        ) %>%
+        add_sf(
+          inherit = FALSE,
+          data = ncsd,
+          split = ~cut(val, b = c(-1,-.8,-.6, -.4, -.2, 0, .2, .4, .6, .8, 1)),
+          stroke = ~I(pal1(val)),
+          fillcolor = ~I(pal1(val)),
+          colors = "RdBu",
+          opacity = as.integer(input$slider2),
+          text = ~val,
+          showlegend = FALSE
+        ) %>%
+        highlight(color = "red") %>%
+        layout(
+          font = list(color='white'),
+          plot_bgcolor = '#191A1A',
+          paper_bgcolor = '#191A1A',
+          mapbox = list(
+            style = 'dark',
+            zoom = 8,
+            center = list(
+              lat = bounds$ymin + (bounds$ymax - bounds$ymin),
+              lon = bounds$xmin + (bounds$xmax - bounds$xmin)
+            )
+          ),
+          margin = list(l = 25, r = 25, b = 25, t = 25, pad = 2)
+        ) %>%
+        hide_colorbar()
+      }
+    )
     
     output$plot <- renderPlotly({
       if(input$radio=="cor") {
@@ -361,10 +362,8 @@ server <- function(input, output, session) {
           highlight("plotly_click", color = "red")
       }
       else {
-
-        variables <- table.names[2:(length(table.names)-1)]
+        variables = table.names[2:(length(table.names)-1)]
         variable.pairs <- combn(variables, 2, simplify=F)
-
         plt <- plot_ly(ncsd)
 
         for (i in seq_along(variable.pairs)) {
@@ -398,7 +397,6 @@ server <- function(input, output, session) {
         }
 
         btns <- list()
-
         visibles <- list()
 
         for (i in seq_along(variable.pairs)) {
