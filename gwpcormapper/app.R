@@ -227,7 +227,7 @@ server <- function(input, output, session) {
         }
         if(input$radio=="cor"){
           if(input$radio2=="pearson") {
-            vn <- "corr_" %+% var1 %+% "." %+% var2,
+            vn <- "corr_" %+% var1 %+% "." %+% var2
             vn2 <- "corr_pval_" %+% var1 %+% "." %+% var2
           }
           else {
@@ -251,7 +251,7 @@ server <- function(input, output, session) {
         }
         else {
           if(input$radio2=="pearson") {
-            vn <- "pcorr_" %+% var1 %+% "." %+% var2,
+            vn <- "pcorr_" %+% var1 %+% "." %+% var2
             vn2 <- "pcorr_pval_" %+% var1 %+% "." %+% var2
           }
           else {
