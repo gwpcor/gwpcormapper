@@ -231,7 +231,7 @@ server <- function(input, output, session) {
             vn2 <- "corr_pval_" %+% var1 %+% "." %+% var2
           }
           else {
-            vn <- "scorr_" %+% var1 %+% "." %+% var2)
+            vn <- "scorr_" %+% var1 %+% "." %+% var2
             vn2 <- "scorr_pval_" %+% var1 %+% "." %+% var2
           }
           start.time <- Sys.time()
@@ -255,7 +255,7 @@ server <- function(input, output, session) {
             vn2 <- "pcorr_pval_" %+% var1 %+% "." %+% var2
           }
           else {
-            vn <- "spcorr_" %+% var1 %+% "." %+% var2)
+            vn <- "spcorr_" %+% var1 %+% "." %+% var2
             vn2 <- "spcorr_pval_" %+% var1 %+% "." %+% var2
           }
           shapefile <- gwpcor_calc(sdata = data,
