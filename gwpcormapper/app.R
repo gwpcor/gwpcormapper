@@ -4,8 +4,7 @@ library(sp)
 library(tidyverse)
 library(shinydashboard)
 library(shinythemes)
-library(MyRMiscFunc)
-library(gwpcor)
+library(GWpcor)
 library(here)
 library(spdplyr)
 library(GWmodel)
@@ -20,7 +19,7 @@ library(shinyjs)
 
 # gwpcor function for parallel computing
 # core registraion functions were extract outside from gwpcor::gwpcor function due to the suspicion of the slow processing
-source(here("gwpcor_parallel_func.R"))
+#source(here("gwpcor_parallel_func.R"))
 
 ui <- dashboardPage(
   dashboardHeader(title = "gwpcorMapper"),
@@ -102,7 +101,7 @@ server <- function(input, output, session) {
   # gwpcor wrapper function
   gwpcor_calc <- function(sdata, var1, var2, var3, method,kernel, b, dMat){
     selected_vars <- c(var1, var2, var3)
-    out <- gwpcor_parallel(sdata=sdata,
+    out <- gwpcor(sdata=sdata,
                            vars = selected_vars,
                            method = method,
                            kernel = kernel,
