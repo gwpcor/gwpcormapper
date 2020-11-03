@@ -21,7 +21,9 @@ library(shinyjs)
 
 ui <- dashboardPage(
   dashboardHeader(title = "gwpcorMapper"),
-  dashboardSidebar(sidebarMenu(
+  dashboardSidebar(
+    width=400,
+    sidebarMenu(
     fileInput("file1", NULL,
               buttonLabel = "Load data",
               placeholder = "No file selected",
@@ -37,8 +39,10 @@ ui <- dashboardPage(
                  selected = "pearson"),
     selectInput(inputId = "input_type1",
                 label = "Correlation pair 1",
+                width = '100%',
                 choices = ''),
     selectInput(inputId = "input_type2",
+                width = '100%',
                 label = "Correlation pair 2",
                 choices = ''),
     conditionalPanel(
