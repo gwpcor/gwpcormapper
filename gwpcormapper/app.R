@@ -67,7 +67,6 @@ ui <- dashboardPage(
     sliderInput("slider2", "Map opacity:", 0.1, 1, 0.1)
   )),
   dashboardBody(
-    useShinyjs(),
     tags$head(
       tags$style("#map {height: calc(100vh - 60px) !important; padding: 0; margin: 0;}"),
       tags$style("#plot {height: calc(100vh - 60px) !important; padding: 0; margin: 0;}"),
@@ -90,10 +89,10 @@ ui <- dashboardPage(
 server <- function(input, output, session) {
   options(shiny.maxRequestSize = 200*1024^2)
   
-  data <- NULL
-  dMat <- NULL
-  varname <- NULL
-  num_row <- NULL
+  #data <- NULL
+  #dMat <- NULL
+  #varname <- NULL
+  #num_row <- NULL
   
   makeReactiveBinding("data")
   makeReactiveBinding("dMat")
@@ -281,9 +280,9 @@ server <- function(input, output, session) {
           shapefile_selected <- cbind(shapefile_selected, data[[control.variable]])
         }
         var3.names <- "var" %+% 3:(2+length(var3))
-        table.names <- c(c('val', 'val2', 'var1', 'var2'), var3.names, c('geometry') )
+        table.names <- c(c('val', 'val2', 'var1', 'var2'), var3.names, 'geometry')
         colnames(shapefile_selected) <- table.names
-        name.mapping <- c(c(var1), c(var2), c(var3))
+        name.mapping <- c(var1, var2, var3)
         names(name.mapping) <- c(c('var1', 'var2'), var3.names)
         ncsd <- SharedData$new(shapefile_selected)
         ncsd.pv01 <- SharedData$new(shapefile_selected[shapefile_selected$val2 <= 0.01,])
@@ -366,7 +365,7 @@ server <- function(input, output, session) {
           highlight("plotly_click", color = "red")
       }
       else {
-        variables = table.names[2:(length(table.names)-1)]
+        variables <- table.names[2:(length(table.names)-1)]
         variable.pairs <- combn(variables, 2, simplify=F)
         plt <- plot_ly(ncsd)
 
