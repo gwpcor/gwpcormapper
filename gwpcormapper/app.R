@@ -5,7 +5,7 @@ library(tidyverse)
 library(shinydashboard)
 library(shinythemes)
 library(MyRMiscFunc)
-library(gwpcor)
+library(GWpcor)
 library(here)
 library(spdplyr)
 library(GWmodel)
@@ -18,9 +18,6 @@ library(doParallel)
 library(leaflet)
 library(shinyjs)
 
-# gwpcor function for parallel computing
-# core registraion functions were extract outside from gwpcor::gwpcor function due to the suspicion of the slow processing
-source(here("gwpcor_parallel_func.R"))
 
 ui <- dashboardPage(
   dashboardHeader(title = "gwpcorMapper"),
@@ -29,7 +26,7 @@ ui <- dashboardPage(
               buttonLabel = "Load data",
               placeholder = "No file selected",
               multiple = FALSE,
-              accept = c(".gpkg")),
+              accept = ".gpkg"),
     radioButtons(inputId = "radio", label = "Type",
                  choices = list("GW correlation" = "cor",
                                 "GW partial correlation" = "pcor"),
@@ -102,15 +99,15 @@ server <- function(input, output, session) {
   # gwpcor wrapper function
   gwpcor_calc <- function(sdata, var1, var2, var3, method,kernel, b, dMat){
     selected_vars <- c(var1, var2, var3)
-    out <- gwpcor_parallel(sdata=sdata,
-                           vars = selected_vars,
-                           method = method,
-                           kernel = kernel,
-                           bw = b,
-                           adaptive = TRUE,
-                           longlat = FALSE,
-                           dMat=dMat
-                           )
+    out <- gwpcor(sdata=sdata,
+                  vars = selected_vars,
+                  method = method,
+                  kernel = kernel,
+                  bw = b,
+                  adaptive = TRUE,
+                  longlat = FALSE,
+                  dMat=dMat
+    )
     result <- out$SDF %>% st_transform(.,4326)
     return(result)
   }
@@ -119,13 +116,14 @@ server <- function(input, output, session) {
     data <- sf::st_read(input$file1$datapath) %>% st_transform(.,4326) 
   
     withProgress(message = 'Building distance matrix',
-                 detail = '...', value = 1, {
-                   dp.locat <- sf::st_centroid(data) %>% sf::st_coordinates(.)
-                   dMat <<- gw.dist(dp.locat = dp.locat, p = 2, theta = 0, longlat = F)
-                   }
-                   )
+      detail = '...', value = 1, {
+      # todo: this might fail if data are points, not polygons
+      dp.locat <- sf::st_centroid(data) %>% sf::st_coordinates(.)
+      dMat <<- gw.dist(dp.locat = dp.locat, p = 2, theta = 0, longlat = F)
+    }
+    )
 
-    
+
     num_row <<- nrow(data)
 
     dummy <- 1:num_row
@@ -233,9 +231,9 @@ server <- function(input, output, session) {
                    
                    if(input$radio=="cor"){
  
-                     ifelse(input$radio2=="pearson",
-                            vn <- "corr_" %+% var1 %+% "." %+% var2,
-                            vn <- "scorr_" %+% var1 %+% "." %+% var2)
+                     vn <- ifelse(input$radio2=="pearson",
+                            "corr_" %+% var1 %+% "." %+% var2,
+                            "scorr_" %+% var1 %+% "." %+% var2)
                     start.time <- Sys.time()
                      shapefile <- gwpcor_calc(sdata = data,
                                               var1 = var1,
@@ -253,9 +251,9 @@ server <- function(input, output, session) {
 
                    } else {
                      
-                     ifelse(input$radio2=="pearson",
-                            vn <- "pcorr_" %+% var1 %+% "." %+% var2,
-                            vn <- "spcorr_" %+% var1 %+% "." %+% var2)
+                     vn <- ifelse(input$radio2=="pearson",
+                            "pcorr_" %+% var1 %+% "." %+% var2,
+                            "spcorr_" %+% var1 %+% "." %+% var2)
                      
                      shapefile <- gwpcor_calc(sdata = data,
                                               var1 = var1,
@@ -279,10 +277,10 @@ server <- function(input, output, session) {
 
                    var3.names <- "var" %+% 3:(2+length(var3))
 
-                   table.names <- c(c('val', 'var1', 'var2'), var3.names, c('geometry') )
+                   table.names <- c(c('val', 'var1', 'var2'), var3.names, 'geometry')
                    colnames(shapefile_selected) <- table.names
                    
-                   name.mapping <- c(c(var1), c(var2), c(var3))
+                   name.mapping <- c(var1, var2, var3)
                    
                    names(name.mapping) <- c(c('var1', 'var2'), var3.names)
                    
@@ -325,7 +323,7 @@ server <- function(input, output, session) {
     
     output$plot <- renderPlotly({
       if(input$radio=="cor") {
-        plt <- plot_ly(ncsd, x = ~var1, y = ~var2, text = ~paste('GW coefficient: ', val)
+        plot_ly(ncsd, x = ~var1, y = ~var2, text = ~paste('GW coefficient: ', val)
         ) %>%
           layout(
             font = list(color='white'),
@@ -344,16 +342,16 @@ server <- function(input, output, session) {
       }
       else {
 
-        variables = table.names[2:(length(table.names)-1)]
+        variables <- table.names[2:(length(table.names)-1)]
         variable.pairs <- combn(variables, 2, simplify=F)
 
         plt <- plot_ly(ncsd)
 
-        for (i in 1:length(variable.pairs)) {
+        for (i in seq_along(variable.pairs)) {
           if (i == 1) {
             var.x <- variable.pairs[[i]][1]
             var.y <- variable.pairs[[i]][2]
-            plt = add_markers(plt,
+            plt <- add_markers(plt,
                               colors = rpal,
                               color = ~val,
                               text = ~paste('GW coefficient: ', val),
@@ -366,7 +364,7 @@ server <- function(input, output, session) {
           else {
             var.x <- variable.pairs[[i]][1]
             var.y <- variable.pairs[[i]][2]
-            plt = add_markers(plt,
+            plt <- add_markers(plt,
                               colors = rpal,
                               color = ~val,
                               text = ~paste('GW coefficient: ', val),
@@ -383,12 +381,12 @@ server <- function(input, output, session) {
 
         visibles <- list()
 
-        for (i in 1:length(variable.pairs)) {
+        for (i in seq_along(variable.pairs)) {
           visibles[[i]] <- rep(F, length(variable.pairs))
           visibles[[i]][i] <- T
         }
-        
-        for (i in 1:length(variable.pairs)) {
+
+        for (i in seq_along(variable.pairs)) {
           if (i == 1) {
             a <- list(list(visible = visibles[[i]]),
                       list(xaxis = list(title = name.mapping[[variable.pairs[[i]][1]]],
@@ -399,8 +397,8 @@ server <- function(input, output, session) {
                       )
             )
           }
-          
-          
+
+
           else {
             a <- list(list(visible = visibles[[i]]),
                       list(xaxis = list(title = names(which(varname == substr(name.mapping[[variable.pairs[[i]][1]]], 1, nchar(name.mapping[[variable.pairs[[i]][1]]]) - 5))) ),
@@ -408,7 +406,7 @@ server <- function(input, output, session) {
                       )
             )
           }
-          
+
           btns[[i]] <- list(
             method = "update",
             args = a,
