@@ -89,10 +89,10 @@ ui <- dashboardPage(
 server <- function(input, output, session) {
   options(shiny.maxRequestSize = 200*1024^2)
   
-  #data <- NULL
-  #dMat <- NULL
-  #varname <- NULL
-  #num_row <- NULL
+  data <- NULL
+  dMat <- NULL
+  varname <- NULL
+  num_row <- NULL
   
   makeReactiveBinding("data")
   makeReactiveBinding("dMat")
@@ -123,7 +123,6 @@ server <- function(input, output, session) {
       # todo: this might fail if data are points, not polygons
       dp.locat <- sf::st_centroid(data) %>% sf::st_coordinates(.)
       dMat <<- gw.dist(dp.locat = dp.locat, p = 2, theta = 0, longlat = F)
-    }
     )
 
     
