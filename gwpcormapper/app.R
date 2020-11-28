@@ -6,26 +6,16 @@ library(shinydashboard)
 library(shinythemes)
 library(MyRMiscFunc)
 library(GWpcor)
-library(here)
 library(spdplyr)
 library(GWmodel)
 library(plotly)
 library(RColorBrewer)
 library(dplyr)
 library(crosstalk)
-library(foreach)
-library(doParallel)
 library(leaflet)
-library(shinyjs)
 
-readRenviron(".env")
 
-if (Sys.getenv("MAPBOX_TOKEN") == '') {
-  Sys.setenv(MAPBOX_TOKEN = 0000000000000)
-  style <- 'open-street-map'
-} else {
-  style <- Sys.getenv("style")
-}
+style <- Sys.getenv("STYLE")
 
 ui <- dashboardPage(
   dashboardHeader(title = "gwpcorMapper"),
@@ -35,7 +25,8 @@ ui <- dashboardPage(
     fileInput("file1", NULL,
               buttonLabel = "Load data",
               placeholder = "No file selected",
-              multiple = FALSE),
+              multiple = FALSE,
+              accept = c(".geojson", ".gpkg", ".shp")),
     radioButtons(inputId = "radio", label = "Type",
                  choices = list("GW correlation" = "cor",
                                 "GW partial correlation" = "pcor"),
@@ -326,7 +317,7 @@ server <- function(input, output, session) {
           split = ~cut(val, b = c(-1,-.8,-.6, -.4, -.2, 0, .2, .4, .6, .8, 1)),
           stroke = ~I(pal1(val)),
           fillcolor = ~I(pal1(val)),
-          colors = "RdBu",
+          colors = rpal,
           opacity = as.integer(input$slider2),
           text = ~val,
           showlegend = FALSE

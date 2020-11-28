@@ -3,12 +3,6 @@ RUN Rscript -e "install.packages(c('shiny', 'shinyjs', 'shinythemes', 'shinydash
 RUN Rscript -e "remotes::install_github('naru-T/MyRMiscFunc')"
 RUN Rscript -e "remotes::install_github('naru-T/GWpcor')"
 
-ARG PASSWORD=password
-ARG MAPBOX_TOKEN=token
-
-ENV PASSWORD=${PASSWORD}
-ENV MAPBOX_TOKEN=${MAPBOX_TOKEN}
-
 COPY shiny-server.sh /usr/bin/shiny-server.sh
 RUN chmod +x /usr/bin/shiny-server.sh
 
