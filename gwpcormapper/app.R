@@ -18,6 +18,14 @@ library(doParallel)
 library(leaflet)
 library(shinyjs)
 
+readRenviron(".env")
+
+if (Sys.getenv("MAPBOX_TOKEN") == '') {
+  Sys.setenv(MAPBOX_TOKEN = 0000000000000)
+  style <- 'open-street-map'
+} else {
+  style <- Sys.getenv("style")
+}
 
 ui <- dashboardPage(
   dashboardHeader(title = "gwpcorMapper"),
@@ -100,7 +108,7 @@ server <- function(input, output, session) {
   makeReactiveBinding("num_row")
   
   # gwpcor wrapper function
-  gwpcor_calc <- function(sdata, var1, var2, var3, method,kernel, b, dMat){
+  gwpcor_calc <- function(sdata, var1, var2, var3, method, kernel, b, dMat){
     selected_vars <- c(var1, var2, var3)
     out <- gwpcor(sdata=sdata,
                   vars = selected_vars,
@@ -118,11 +126,15 @@ server <- function(input, output, session) {
   observeEvent(input$file1, {
     data <- sf::st_read(input$file1$datapath) %>% st_transform(.,4326) 
   
-    withProgress(message = 'Building distance matrix',
-      detail = '...', value = 1, {
-      # todo: this might fail if data are points, not polygons
-      dp.locat <- sf::st_centroid(data) %>% sf::st_coordinates(.)
-      dMat <<- gw.dist(dp.locat = dp.locat, p = 2, theta = 0, longlat = F)
+    withProgress(
+      message = 'Building distance matrix',
+      detail = '...',
+      value = 1,
+     {
+       # todo: this might fail if data are points, not polygons
+       dp.locat <- sf::st_centroid(data) %>% sf::st_coordinates(.)
+       dMat <<- gw.dist(dp.locat = dp.locat, p = 2, theta = 0, longlat = F)
+     }
     )
 
     
@@ -163,7 +175,9 @@ server <- function(input, output, session) {
             font = list(color='white'),
             plot_bgcolor = '#191A1A',
             paper_bgcolor = '#191A1A',
-            mapbox = list(style = 'dark', zoom = 0),
+            mapbox = list(
+              style = style,
+              zoom = 0),
             margin = list(l = 25, r = 25, b = 25, t = 25, pad = 2)
           ) %>%
           hide_colorbar()
@@ -188,10 +202,11 @@ server <- function(input, output, session) {
             font = list(color='white'),
             plot_bgcolor = '#191A1A',
             paper_bgcolor = '#191A1A',
-            mapbox = list(style = 'dark',
-                          zoom = 8,
-                          center = list(lat = bounds$ymin + (bounds$ymax - bounds$ymin),
-                                        lon = bounds$xmin + (bounds$xmax - bounds$xmin))),
+            mapbox = list(
+              style = style,
+              zoom = 8,
+              center = list(lat = bounds$ymin + (bounds$ymax - bounds$ymin),
+                            lon = bounds$xmin + (bounds$xmax - bounds$xmin))),
             margin = list(l = 25, r = 25, b = 25, t = 25, pad = 2)
           ) %>%
           hide_colorbar()
@@ -331,7 +346,7 @@ server <- function(input, output, session) {
           plot_bgcolor = '#191A1A',
           paper_bgcolor = '#191A1A',
           mapbox = list(
-            style = 'dark',
+            style = style,
             zoom = 8,
             center = list(
               lat = bounds$ymin + (bounds$ymax - bounds$ymin),
@@ -454,10 +469,7 @@ server <- function(input, output, session) {
           colorbar(title = "Correlation\nCoefficient", limits = c(-1, 1), len = 0.9, nticks = 11) %>%
           highlight("plotly_click", color = "red")
       }
-
-
     })
-    
   })
 }
 
