@@ -35,8 +35,7 @@ ui <- dashboardPage(
     fileInput("file1", NULL,
               buttonLabel = "Load data",
               placeholder = "No file selected",
-              multiple = FALSE,
-              accept = ".gpkg"),
+              multiple = FALSE),
     radioButtons(inputId = "radio", label = "Type",
                  choices = list("GW correlation" = "cor",
                                 "GW partial correlation" = "pcor"),
@@ -108,15 +107,14 @@ server <- function(input, output, session) {
   makeReactiveBinding("num_row")
   
   # gwpcor wrapper function
-  gwpcor_calc <- function(sdata, var1, var2, var3, method, kernel, b, dMat){
+  gwpcor_calc <- function(sdata, var1, var2, var3, method, kernel, b, dMat) {
     selected_vars <- c(var1, var2, var3)
     out <- gwpcor(sdata=sdata,
-                  vars = selected_vars,
-                  method = method,
-                  kernel = kernel,
-                  bw = b,
-                  adaptive = TRUE,
-                  longlat = FALSE,
+                  vars=selected_vars,
+                  method=method,
+                  kernel=kernel,
+                  bw=b,
+                  adaptive=TRUE,
                   dMat=dMat
     )
     result <- out$SDF %>% st_transform(.,4326)
@@ -167,7 +165,7 @@ server <- function(input, output, session) {
   })
   
   observe({
-    if(is.null(input$file1)) {
+    if (is.null(input$file1)) {
       output$map <- renderPlotly({
         plot_mapbox() %>%
           layout(
@@ -191,9 +189,7 @@ server <- function(input, output, session) {
               paper_bgcolor = '#191A1A'
             ) 
       })
-      
-    }
-    else{
+    } else{
       bounds <- st_bbox(data)
       
       output$map <- renderPlotly({
@@ -216,7 +212,7 @@ server <- function(input, output, session) {
   })
   
   observeEvent(input$submit, {
-    if(is.null(input$file1)){
+    if (is.null(input$file1)) {
       showModal(modalDialog(
         title = "Missing data!",
         "Please load your dataset and distance matrix file."
@@ -225,7 +221,6 @@ server <- function(input, output, session) {
     }
     
     bounds <- st_bbox(data)
-    
     
     withProgress(
       message = 'Calculating GW statistics',
@@ -242,8 +237,8 @@ server <- function(input, output, session) {
         else{
           var3 <- input$input_type3
         }
-        if(input$radio=="cor"){
-          if(input$radio2=="pearson") {
+        if (input$radio=="cor") {
+          if (input$radio2=="pearson") {
             vn <- "corr_" %+% var1 %+% "." %+% var2
             vn2 <- "corr_pval_" %+% var1 %+% "." %+% var2
           }
@@ -251,7 +246,6 @@ server <- function(input, output, session) {
             vn <- "scorr_" %+% var1 %+% "." %+% var2
             vn2 <- "scorr_pval_" %+% var1 %+% "." %+% var2
           }
-          start.time <- Sys.time()
           shapefile <- gwpcor_calc(
             sdata = data,
             var1 = var1,
@@ -259,15 +253,12 @@ server <- function(input, output, session) {
             var3 = var3,
             method = input$radio2,
             kernel = input$input_type4,
-            b = as.integer(input$slider * num_row),
+            b = input$slider,
             dMat = dMat
           )
-          end.time <- Sys.time()
-          time.taken <- end.time - start.time
-          shinyjs::logjs(time.taken)
         }
         else {
-          if(input$radio2=="pearson") {
+          if (input$radio2=="pearson") {
             vn <- "pcorr_" %+% var1 %+% "." %+% var2
             vn2 <- "pcorr_pval_" %+% var1 %+% "." %+% var2
           }
@@ -281,7 +272,7 @@ server <- function(input, output, session) {
           var3 = var3,
           method = input$radio2,
           kernel = input$input_type4,
-          b = as.integer(input$slider * num_row),
+          b = input$slider,
           dMat = dMat)
         }
         shapefile_selected <- shapefile %>%
@@ -360,7 +351,7 @@ server <- function(input, output, session) {
     )
     
     output$plot <- renderPlotly({
-      if(input$radio=="cor") {
+      if (input$radio=="cor") {
         plot_ly(ncsd, x = ~var1, y = ~var2, text = ~paste('GW coefficient: ', val)
         ) %>%
           layout(
@@ -379,7 +370,7 @@ server <- function(input, output, session) {
           highlight("plotly_click", color = "red")
       }
       else {
-        variables <- table.names[2:(length(table.names)-1)]
+        variables <- table.names[3:(length(table.names)-1)]
         variable.pairs <- combn(variables, 2, simplify=F)
         plt <- plot_ly(ncsd)
 
@@ -431,10 +422,7 @@ server <- function(input, output, session) {
                                         range = c(min(shapefile_selected[[3]]), max(shapefile_selected[[3]]) + (0.05 * max(shapefile_selected[[3]])) ))
                       )
             )
-          }
-
-
-          else {
+          } else {
             a <- list(list(visible = visibles[[i]]),
                       list(xaxis = list(title = names(which(varname == substr(name.mapping[[variable.pairs[[i]][1]]], 1, nchar(name.mapping[[variable.pairs[[i]][1]]]) - 5))) ),
                            yaxis = list(title = names(which(varname == substr(name.mapping[[variable.pairs[[i]][2]]], 1, nchar(name.mapping[[variable.pairs[[i]][2]]]) - 5))) )
