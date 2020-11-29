@@ -14,6 +14,7 @@ library(dplyr)
 library(crosstalk)
 library(leaflet)
 
+#readRenviron(".env")
 
 style <- Sys.getenv("STYLE")
 
@@ -275,6 +276,10 @@ server <- function(input, output, session) {
         name.mapping <- c(var1, var2, var3)
         names(name.mapping) <- c(c('var1', 'var2'), var3.names)
         ncsd <- SharedData$new(shapefile_selected)
+        threshold01 <- shapefile_selected[shapefile_selected$val2 > 0.01,]
+        threshold05 <- shapefile_selected[shapefile_selected$val2 > 0.05,]
+        ncsd.pv01 <- SharedData$new(threshold01)
+        ncsd.pv05 <- SharedData$new(threshold05)
       }
     )
 
@@ -292,8 +297,16 @@ server <- function(input, output, session) {
           text = ~val
         ) %>%
         add_sf(
-          data = ncsd,
-          split = ~cut(val2, b = c(0, 0.01, 0.05, 0.10, 1), include.lowest = TRUE),
+          data = ncsd.pv01,
+          name = 'p-values > 0.01',
+          color = I('black'),
+          showlegend = TRUE,
+          visible = 'legendonly',
+          opacity = 0.6
+        ) %>%
+        add_sf(
+          data = ncsd.pv05,
+          name = 'p-values > 0.05',
           color = I('black'),
           showlegend = TRUE,
           visible = 'legendonly',
