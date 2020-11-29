@@ -20,7 +20,7 @@ style <- Sys.getenv("STYLE")
 ui <- dashboardPage(
   dashboardHeader(title = "gwpcorMapper"),
   dashboardSidebar(
-    width=400,
+    width=230,
     sidebarMenu(
     fileInput("file1", NULL,
               buttonLabel = "Load data",
@@ -113,7 +113,7 @@ server <- function(input, output, session) {
   }
 
   observeEvent(input$file1, {
-    data <- sf::st_read(input$file1$datapath) %>% st_transform(.,4326) 
+    data <- sf::st_read(input$file1$datapath) %>% st_transform(.,4326)
   
     withProgress(
       message = 'Building distance matrix',
@@ -164,12 +164,8 @@ server <- function(input, output, session) {
             font = list(color='white'),
             plot_bgcolor = '#191A1A',
             paper_bgcolor = '#191A1A',
-            mapbox = list(
-              style = style,
-              zoom = 0),
-            margin = list(l = 25, r = 25, b = 25, t = 25, pad = 2)
-          ) %>%
-          hide_colorbar()
+            mapbox = list(style = style)
+          )
       })
       
       output$plot <- renderPlotly({
@@ -191,12 +187,10 @@ server <- function(input, output, session) {
             paper_bgcolor = '#191A1A',
             mapbox = list(
               style = style,
-              zoom = 8,
               center = list(lat = bounds$ymin + (bounds$ymax - bounds$ymin),
-                            lon = bounds$xmin + (bounds$xmax - bounds$xmin))),
-            margin = list(l = 25, r = 25, b = 25, t = 25, pad = 2)
-          ) %>%
-          hide_colorbar()
+                            lon = bounds$xmin + (bounds$xmax - bounds$xmin))
+            )
+          )
       })
 
     }
@@ -281,63 +275,53 @@ server <- function(input, output, session) {
         name.mapping <- c(var1, var2, var3)
         names(name.mapping) <- c(c('var1', 'var2'), var3.names)
         ncsd <- SharedData$new(shapefile_selected)
-        ncsd.pv01 <- SharedData$new(shapefile_selected[shapefile_selected$val2 <= 0.01,])
-        ncsd.pv05 <- SharedData$new(shapefile_selected[shapefile_selected$val2 <= 0.05,])
       }
     )
 
-    output$map <- renderPlotly(
-      {
-        plot_mapbox(
-          source = "map"
-        ) %>%
+    output$map <- renderPlotly({
+      plot_mapbox(
+        source = "map",
+        data = ncsd
+      ) %>%
         add_sf(
-          inherit = FALSE,
-          data = ncsd.pv01,
-          opacity = 1,
-          name = 'p-values ≤ 0.01',
-          stroke = I('white'),
-          fillcolor = 'white',
-          showlegend = TRUE,
-          visible='legendonly'
-        ) %>%
-        add_sf(
-          inherit = FALSE,
-          data = ncsd.pv05,
-          opacity = 1,
-          name = 'p-values ≤ 0.05',
-          stroke = I('white'),
-          fillcolor = 'white',
-          showlegend = TRUE,
-          visible='legendonly'
-        ) %>%
-        add_sf(
-          inherit = FALSE,
-          data = ncsd,
           split = ~cut(val, b = c(-1,-.8,-.6, -.4, -.2, 0, .2, .4, .6, .8, 1)),
-          stroke = ~I(pal1(val)),
-          fillcolor = ~I(pal1(val)),
+          color = ~I(pal1(val)),
           colors = rpal,
           opacity = as.integer(input$slider2),
-          text = ~val,
-          showlegend = FALSE
+          showlegend = FALSE,
+          text = ~val
         ) %>%
-        highlight(color = "red") %>%
+        add_sf(
+          data = ncsd,
+          split = ~cut(val2, b = c(0, 0.01, 0.05, 0.10, 1), include.lowest = TRUE),
+          color = I('black'),
+          showlegend = TRUE,
+          visible = 'legendonly',
+          opacity = 0.6
+        ) %>%
+        highlight(color = "red")  %>%
         layout(
           font = list(color='white'),
           plot_bgcolor = '#191A1A',
           paper_bgcolor = '#191A1A',
+          showlegend=TRUE,
+          legend = list(
+            orientation = 'h',
+            title = list(text = "p-value mask"),
+            xanchor = "center",
+            x = 0.5,
+            yanchor = "bottom"
+          ),
           mapbox = list(
             style = style,
-            zoom = 8,
+            zoom = 10, # replace with auto zoom once available https://github.com/plotly/plotly.js/issues/3434
             center = list(
               lat = bounds$ymin + (bounds$ymax - bounds$ymin),
               lon = bounds$xmin + (bounds$xmax - bounds$xmin)
             )
-          ),
-          margin = list(l = 25, r = 25, b = 25, t = 25, pad = 2)
+          )
         ) %>%
-        hide_colorbar()
+        colorbar(title = "Correlation\nCoefficient", limits = c(-1, 1), len = 0.9, nticks = 11)
       }
     )
     
