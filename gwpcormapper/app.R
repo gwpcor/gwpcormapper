@@ -298,7 +298,7 @@ server <- function(input, output, session) {
         ) %>%
         add_sf(
           data = ncsd.pv01,
-          name = 'p-values > 0.01',
+          name = '> 0.01',
           color = I('black'),
           showlegend = TRUE,
           visible = 'legendonly',
@@ -306,7 +306,7 @@ server <- function(input, output, session) {
         ) %>%
         add_sf(
           data = ncsd.pv05,
-          name = 'p-values > 0.05',
+          name = '> 0.05',
           color = I('black'),
           showlegend = TRUE,
           visible = 'legendonly',
@@ -320,14 +320,15 @@ server <- function(input, output, session) {
           showlegend=TRUE,
           legend = list(
             orientation = 'h',
-            title = list(text = "p-value mask"),
+            # title does not support center text ...
+            title = list(text = '<b>Masking areas with p-value</b>', side = 'top'),
             xanchor = "center",
             x = 0.5,
             yanchor = "bottom"
           ),
           mapbox = list(
             style = style,
-            zoom = 10, # replace with auto zoom once available https://github.com/plotly/plotly.js/issues/3434
+            zoom = 10.55, # replace with auto zoom once available https://github.com/plotly/plotly.js/issues/3434
             center = list(
               lat = bounds$ymin + (bounds$ymax - bounds$ymin),
               lon = bounds$xmin + (bounds$xmax - bounds$xmin)
