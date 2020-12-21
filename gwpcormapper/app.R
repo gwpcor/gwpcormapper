@@ -275,20 +275,16 @@ server <- function(input, output, session) {
         colnames(shapefile_selected) <- table.names
         name.mapping <- c(var1, var2, var3)
         names(name.mapping) <- c(c('var1', 'var2'), var3.names)
-        ncsd <- SharedData$new(shapefile_selected)
-        threshold01 <- shapefile_selected[shapefile_selected$val2 > 0.01,]
-        threshold05 <- shapefile_selected[shapefile_selected$val2 > 0.05,]
-        ncsd.pv01 <- SharedData$new(threshold01)
-        ncsd.pv05 <- SharedData$new(threshold05)
+        shared_data <- SharedData$new(shapefile_selected)
       }
     )
 
     output$map <- renderPlotly({
       plot_mapbox(
-        source = "map",
-        data = ncsd
+        source = "map"
       ) %>%
         add_sf(
+          data = shared_data,
           split = ~cut(val, b = c(-1,-.8,-.6, -.4, -.2, 0, .2, .4, .6, .8, 1)),
           color = ~I(pal1(val)),
           colors = rpal,
@@ -297,22 +293,27 @@ server <- function(input, output, session) {
           text = ~val
         ) %>%
         add_sf(
-          data = ncsd.pv01,
-          name = '> 0.01',
+          data = shared_data,
+          split = ~cut(val2, labels = "> 0.01", b = c(.01, 1)),
           color = I('black'),
+          opacity = as.integer(input$slider2),
           showlegend = TRUE,
           visible = 'legendonly',
-          opacity = 0.6
+          text = ~val
         ) %>%
         add_sf(
-          data = ncsd.pv05,
-          name = '> 0.05',
+          data = shared_data,
+          split = ~cut(val2, labels = "> 0.05", b = c(.05, 1)),
           color = I('black'),
+          opacity = as.integer(input$slider2),
           showlegend = TRUE,
           visible = 'legendonly',
-          opacity = 0.6
+          text = ~val
         ) %>%
-        highlight(color = "red")  %>%
+        highlight(
+          color = "red",
+          selected = attrs_selected(showlegend = FALSE)
+        ) %>%
         layout(
           font = list(color='white'),
           plot_bgcolor = '#191A1A',
@@ -341,14 +342,14 @@ server <- function(input, output, session) {
     
     output$plot <- renderPlotly({
       if (input$radio=="cor") {
-        plot_ly(ncsd, x = ~var1, y = ~var2, text = ~paste('GW coefficient: ', val)
+        plot_ly(shared_data, x = ~var2, y = ~var1, text = ~paste('GW coefficient: ', val)
         ) %>%
           layout(
             font = list(color='white'),
             plot_bgcolor = '#191A1A',
             paper_bgcolor = '#191A1A',
-            xaxis = list(title = input$input_type1),
-            yaxis = list(title = input$input_type2)
+            xaxis = list(title = input$input_type2),
+            yaxis = list(title = input$input_type1)
           ) %>%
           add_trace(type = "scatter",
                     mode = "markers",
@@ -361,12 +362,12 @@ server <- function(input, output, session) {
       else {
         variables <- table.names[3:(length(table.names)-1)]
         variable.pairs <- combn(variables, 2, simplify=F)
-        plt <- plot_ly(ncsd)
+        plt <- plot_ly(shared_data)
 
         for (i in seq_along(variable.pairs)) {
           if (i == 1) {
-            var.x <- variable.pairs[[i]][1]
-            var.y <- variable.pairs[[i]][2]
+            var.y <- variable.pairs[[i]][1]
+            var.x <- variable.pairs[[i]][2]
             plt <- add_markers(plt,
                               colors = rpal,
                               color = ~val,
@@ -378,8 +379,8 @@ server <- function(input, output, session) {
             )
           }
           else {
-            var.x <- variable.pairs[[i]][1]
-            var.y <- variable.pairs[[i]][2]
+            var.y <- variable.pairs[[i]][1]
+            var.x <- variable.pairs[[i]][2]
             plt <- add_markers(plt,
                               colors = rpal,
                               color = ~val,
@@ -404,17 +405,17 @@ server <- function(input, output, session) {
         for (i in seq_along(variable.pairs)) {
           if (i == 1) {
             a <- list(list(visible = visibles[[i]]),
-                      list(xaxis = list(title = name.mapping[[variable.pairs[[i]][1]]],
-                                        range = c(min(shapefile_selected[[2]]), max(shapefile_selected[[2]]) + (0.05 * max(shapefile_selected[[2]])) )
+                      list(xaxis = list(title = name.mapping[[variable.pairs[[i]][2]]],
+                                        range = c(min(shapefile_selected[[3]]), max(shapefile_selected[[3]]) + (0.05 * max(shapefile_selected[[3]])) )
                                         ),
-                           yaxis = list(title = name.mapping[[variable.pairs[[i]][2]]],
-                                        range = c(min(shapefile_selected[[3]]), max(shapefile_selected[[3]]) + (0.05 * max(shapefile_selected[[3]])) ))
+                           yaxis = list(title = name.mapping[[variable.pairs[[i]][1]]],
+                                        range = c(min(shapefile_selected[[2]]), max(shapefile_selected[[2]]) + (0.05 * max(shapefile_selected[[2]])) ))
                       )
             )
           } else {
             a <- list(list(visible = visibles[[i]]),
-                      list(xaxis = list(title = names(which(varname == substr(name.mapping[[variable.pairs[[i]][1]]], 1, nchar(name.mapping[[variable.pairs[[i]][1]]]) - 5))) ),
-                           yaxis = list(title = names(which(varname == substr(name.mapping[[variable.pairs[[i]][2]]], 1, nchar(name.mapping[[variable.pairs[[i]][2]]]) - 5))) )
+                      list(xaxis = list(title = names(which(varname == substr(name.mapping[[variable.pairs[[i]][2]]], 1, nchar(name.mapping[[variable.pairs[[i]][2]]]) - 5))) ),
+                           yaxis = list(title = names(which(varname == substr(name.mapping[[variable.pairs[[i]][1]]], 1, nchar(name.mapping[[variable.pairs[[i]][1]]]) - 5))) )
                       )
             )
           }
@@ -422,8 +423,8 @@ server <- function(input, output, session) {
           btns[[i]] <- list(
             method = "update",
             args = a,
-            label = "X: " %+% name.mapping[[variable.pairs[[i]][1]]] %+% "\n" %+%
-              "Y: " %+% name.mapping[[variable.pairs[[i]][2]]]
+            label = "Y: " %+% name.mapping[[variable.pairs[[i]][1]]] %+% "\n" %+%
+              "X: " %+% name.mapping[[variable.pairs[[i]][2]]]
           )
         }
 
@@ -432,10 +433,12 @@ server <- function(input, output, session) {
             font = list(color='white'),
             plot_bgcolor = '#191A1A',
             paper_bgcolor = '#191A1A',
-            xaxis = list(title = name.mapping[[variable.pairs[[1]][1]]],
-                         range = c(min(shapefile_selected[[2]]), max(shapefile_selected[[2]]) + (0.05 * max(shapefile_selected[[2]])) )),
-            yaxis = list(title = name.mapping[[variable.pairs[[1]][2]]],
-                         range = c(min(shapefile_selected[[3]]), max(shapefile_selected[[3]]) + (0.05 * max(shapefile_selected[[3]])) )),
+            xaxis = list(title = name.mapping[[variable.pairs[[1]][2]]]
+                         # range = c(min(shapefile_selected[[2]]), max(shapefile_selected[[2]]) + (0.05 * max(shapefile_selected[[2]])) )
+            ),
+            yaxis = list(title = name.mapping[[variable.pairs[[1]][1]]]
+                         # range = c(min(shapefile_selected[[3]]), max(shapefile_selected[[3]]) + (0.05 * max(shapefile_selected[[3]])) )
+            ),
             updatemenus = list(
               list(
                 x = 1,
