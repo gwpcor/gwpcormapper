@@ -335,14 +335,17 @@ server <- function(input, output, session) {
               lon = bounds$xmin + (bounds$xmax - bounds$xmin)
             )
           )
-        ) %>%
-        colorbar(title = "Correlation\nCoefficient", limits = c(-1, 1), len = 0.9, nticks = 11)
+        )
       }
     )
     
     output$plot <- renderPlotly({
       if (input$radio=="cor") {
-        plot_ly(shared_data, x = ~var2, y = ~var1, text = ~paste('GW coefficient: ', val)
+        plot_ly(
+          shared_data,
+          x = ~var2,
+          y = ~var1,
+          text = ~paste('GW coefficient: ', val)
         ) %>%
           layout(
             font = list(color='white'),
@@ -362,69 +365,51 @@ server <- function(input, output, session) {
       else {
         variables <- table.names[3:(length(table.names)-1)]
         variable.pairs <- combn(variables, 2, simplify=F)
-        plt <- plot_ly(shared_data)
-
-        for (i in seq_along(variable.pairs)) {
-          if (i == 1) {
-            var.y <- variable.pairs[[i]][1]
-            var.x <- variable.pairs[[i]][2]
-            plt <- add_markers(plt,
-                              colors = rpal,
-                              color = ~val,
-                              text = ~paste('GW coefficient: ', val),
-                              x = shapefile_selected[[var.x]],
-                              y = shapefile_selected[[var.y]],
-                              showlegend = FALSE,
-                              visible = T
-            )
-          }
-          else {
-            var.y <- variable.pairs[[i]][1]
-            var.x <- variable.pairs[[i]][2]
-            plt <- add_markers(plt,
-                              colors = rpal,
-                              color = ~val,
-                              text = ~paste('GW coefficient: ', val),
-                              x = shapefile_selected[[var.x]],
-                              y = shapefile_selected[[var.y]],
-                              showlegend = FALSE,
-                              visible = F
-            )
-          }
-
-        }
 
         btns <- list()
         visibles <- list()
 
+        plt <- plot_ly(
+          shared_data
+        )
+
         for (i in seq_along(variable.pairs)) {
+          var.y <- variable.pairs[[i]][1]
+          var.x <- variable.pairs[[i]][2]
+          plt <- plt %>% add_markers(
+            color = ~val,
+            colors = rpal,
+            text = ~paste('GW coefficient: ', val),
+            x = shapefile_selected[[var.x]],
+            y = shapefile_selected[[var.y]],
+            showlegend = FALSE,
+            visible = F
+          )
           visibles[[i]] <- rep(F, length(variable.pairs))
           visibles[[i]][i] <- T
-        }
-
-        for (i in seq_along(variable.pairs)) {
-          if (i == 1) {
-            a <- list(list(visible = visibles[[i]]),
-                      list(xaxis = list(title = name.mapping[[variable.pairs[[i]][2]]],
-                                        range = c(min(shapefile_selected[[3]]), max(shapefile_selected[[3]]) + (0.05 * max(shapefile_selected[[3]])) )
-                                        ),
-                           yaxis = list(title = name.mapping[[variable.pairs[[i]][1]]],
-                                        range = c(min(shapefile_selected[[2]]), max(shapefile_selected[[2]]) + (0.05 * max(shapefile_selected[[2]])) ))
-                      )
-            )
-          } else {
-            a <- list(list(visible = visibles[[i]]),
-                      list(xaxis = list(title = names(which(varname == substr(name.mapping[[variable.pairs[[i]][2]]], 1, nchar(name.mapping[[variable.pairs[[i]][2]]]) - 5))) ),
-                           yaxis = list(title = names(which(varname == substr(name.mapping[[variable.pairs[[i]][1]]], 1, nchar(name.mapping[[variable.pairs[[i]][1]]]) - 5))) )
-                      )
-            )
-          }
 
           btns[[i]] <- list(
+            label =
+              "Y: " %+% name.mapping[[variable.pairs[[i]][1]]]
+                %+% "\n" %+%
+              "X: " %+% name.mapping[[variable.pairs[[i]][2]]],
+            visible = T,
             method = "update",
-            args = a,
-            label = "Y: " %+% name.mapping[[variable.pairs[[i]][1]]] %+% "\n" %+%
-              "X: " %+% name.mapping[[variable.pairs[[i]][2]]]
+            args = list(
+              # list(marker = list(
+              #   colorbar = list(title = "Correlation\nCoefficient", limits = c(-1, 1), len = 0.9, nticks = 11)
+              # )),
+              list(visible = visibles[[i]]),
+              list(
+                xaxis = list(
+                  title = name.mapping[[variable.pairs[[i]][2]]]
+                ),
+                yaxis = list(
+                  title = name.mapping[[variable.pairs[[i]][1]]]
+                ),
+                colorbar = list(title = "Correlation\nCoefficient", limits = c(-1, 1), len = 0.9, nticks = 11)
+              )
+            )
           )
         }
 
@@ -433,14 +418,9 @@ server <- function(input, output, session) {
             font = list(color='white'),
             plot_bgcolor = '#191A1A',
             paper_bgcolor = '#191A1A',
-            xaxis = list(title = name.mapping[[variable.pairs[[1]][2]]]
-                         # range = c(min(shapefile_selected[[2]]), max(shapefile_selected[[2]]) + (0.05 * max(shapefile_selected[[2]])) )
-            ),
-            yaxis = list(title = name.mapping[[variable.pairs[[1]][1]]]
-                         # range = c(min(shapefile_selected[[3]]), max(shapefile_selected[[3]]) + (0.05 * max(shapefile_selected[[3]])) )
-            ),
             updatemenus = list(
               list(
+                active = -1,
                 x = 1,
                 buttons = btns
               )
