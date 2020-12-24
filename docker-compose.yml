@@ -4,12 +4,13 @@ services:
   shiny:
     image: iosefa/gwpcormapper
     container_name: gwpcormapper
+    environment:
+      - MAPBOX_TOKEN=${MAPBOX_TOKEN:-token}
+      - PASSWORD=${PASSWORD:-passwd}
+      - STYLE=${STYLE:-open-street-map}
     build:
       context: .
       dockerfile: Dockerfile
-      args:
-        - MAPBOX_TOKEN=${MAPBOX_TOKEN}
-        - PASSWORD=passwd
     restart: always
     user: 'root'
     ports:
@@ -17,8 +18,6 @@ services:
     volumes:
       - 'shiny_logs:/var/log/shiny-server'
       - './gwpcormapper:/srv/shiny-server'
-      # - 'shiny_apps:/srv/shiny-server'
 
 volumes:
   shiny_logs:
-#  shiny_apps:

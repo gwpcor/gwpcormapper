@@ -3,3 +3,6 @@
 .RData
 .Ruserdata
 .env
+.idea
+data/*.geojson
+.DS_Store
