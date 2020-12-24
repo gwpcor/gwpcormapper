@@ -377,13 +377,23 @@ server <- function(input, output, session) {
           var.y <- variable.pairs[[i]][1]
           var.x <- variable.pairs[[i]][2]
           plt <- plt %>% add_markers(
-            color = ~val,
-            colors = rpal,
             text = ~paste('GW coefficient: ', val),
             x = shapefile_selected[[var.x]],
             y = shapefile_selected[[var.y]],
             showlegend = FALSE,
-            visible = F
+            visible = F,
+            marker=list(
+              color = ~val,
+              colors = rpal,
+              cmin = -1,
+              cmax = 1,
+              colorbar = list(
+                title = "Correlation\nCoefficient",
+                limits = c(-1, 1),
+                len = 0.9,
+                nticks = 11
+              )
+            )
           )
           visibles[[i]] <- rep(F, length(variable.pairs))
           visibles[[i]][i] <- T
@@ -396,9 +406,6 @@ server <- function(input, output, session) {
             visible = T,
             method = "update",
             args = list(
-              # list(marker = list(
-              #   colorbar = list(title = "Correlation\nCoefficient", limits = c(-1, 1), len = 0.9, nticks = 11)
-              # )),
               list(visible = visibles[[i]]),
               list(
                 xaxis = list(
@@ -406,8 +413,7 @@ server <- function(input, output, session) {
                 ),
                 yaxis = list(
                   title = name.mapping[[variable.pairs[[i]][1]]]
-                ),
-                colorbar = list(title = "Correlation\nCoefficient", limits = c(-1, 1), len = 0.9, nticks = 11)
+                )
               )
             )
           )
@@ -426,7 +432,6 @@ server <- function(input, output, session) {
               )
             )
           ) %>%
-          colorbar(title = "Correlation\nCoefficient", limits = c(-1, 1), len = 0.9, nticks = 11) %>%
           highlight("plotly_click", color = "red")
       }
     })
