@@ -17,6 +17,15 @@ library(leaflet)
 #readRenviron(".env")
 
 style <- Sys.getenv("STYLE")
+token <- Sys.getenv("MAPBOX_TOKEN")
+
+if (style == '') {
+  style <- 'carto-darkmatter'
+}
+
+if (token == '') {
+  Sys.setenv('MAPBOX_TOKEN' = 'token')
+}
 
 ui <- dashboardPage(
   dashboardHeader(title = "gwpcorMapper"),
