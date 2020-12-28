@@ -17,6 +17,15 @@ library(leaflet)
 #readRenviron(".env")
 
 style <- Sys.getenv("STYLE")
+token <- Sys.getenv("MAPBOX_TOKEN")
+
+if (style == '') {
+  style <- 'carto-darkmatter'
+}
+
+if (token == '') {
+  Sys.setenv('MAPBOX_TOKEN' = 'token')
+}
 
 ui <- dashboardPage(
   dashboardHeader(title = "gwpcorMapper"),
@@ -179,7 +188,12 @@ server <- function(input, output, session) {
       })
     } else{
       bounds <- st_bbox(data)
-      
+      center.lon <- bounds$xmin + (bounds$xmax - bounds$xmin)/2
+      center.lat <- bounds$ymin + (bounds$ymax - bounds$ymin)/2
+      zoom.lon <- log(180/abs(center.lon - bounds$xmin))/log(2)
+      zoom.lat <- log(90/abs(center.lat - bounds$ymin))/log(2)
+      zoom.center <- mean(zoom.lon, zoom.lat)
+
       output$map <- renderPlotly({
         plot_mapbox() %>%
           layout(
@@ -188,8 +202,9 @@ server <- function(input, output, session) {
             paper_bgcolor = '#191A1A',
             mapbox = list(
               style = style,
-              center = list(lat = bounds$ymin + (bounds$ymax - bounds$ymin),
-                            lon = bounds$xmin + (bounds$xmax - bounds$xmin))
+              zoom = zoom.center,
+              center = list(lat = center.lat,
+                            lon = center.lon)
             )
           )
       })
@@ -205,9 +220,14 @@ server <- function(input, output, session) {
       ))
       return()
     }
-    
     bounds <- st_bbox(data)
-    
+    # a very poor approximation, but close enough
+    center.lon <- bounds$xmin + (bounds$xmax - bounds$xmin)/2
+    center.lat <- bounds$ymin + (bounds$ymax - bounds$ymin)/2
+    zoom.lon <- log(180/abs(center.lon - bounds$xmin))/log(2)
+    zoom.lat <- log(90/abs(center.lat - bounds$ymin))/log(2)
+    zoom.center <- (zoom.lon + zoom.lat)/2
+
     withProgress(
       message = 'Calculating GW statistics',
       detail = 'This may take a while...',
@@ -329,10 +349,10 @@ server <- function(input, output, session) {
           ),
           mapbox = list(
             style = style,
-            zoom = 10.55, # replace with auto zoom once available https://github.com/plotly/plotly.js/issues/3434
+            zoom = zoom.center,
             center = list(
-              lat = bounds$ymin + (bounds$ymax - bounds$ymin),
-              lon = bounds$xmin + (bounds$xmax - bounds$xmin)
+              lat = center.lat,
+              lon = center.lon
             )
           )
         )
@@ -374,17 +394,21 @@ server <- function(input, output, session) {
         )
 
         for (i in seq_along(variable.pairs)) {
+          set.visible <- FALSE
+          if (i == 1) {
+            set.visible <- TRUE
+          }
           var.y <- variable.pairs[[i]][1]
           var.x <- variable.pairs[[i]][2]
           plt <- plt %>% add_markers(
             text = ~paste('GW coefficient: ', val),
             x = shapefile_selected[[var.x]],
             y = shapefile_selected[[var.y]],
-            showlegend = FALSE,
-            visible = F,
+            visible = set.visible,
             marker=list(
               color = ~val,
-              colors = rpal,
+              colorscale = rpal,
+              reversescale = TRUE,
               cmin = -1,
               cmax = 1,
               colorbar = list(
@@ -395,15 +419,14 @@ server <- function(input, output, session) {
               )
             )
           )
-          visibles[[i]] <- rep(F, length(variable.pairs))
-          visibles[[i]][i] <- T
+          visibles[[i]] <- rep(FALSE, length(variable.pairs))
+          visibles[[i]][i] <- TRUE
 
           btns[[i]] <- list(
             label =
               "Y: " %+% name.mapping[[variable.pairs[[i]][1]]]
                 %+% "\n" %+%
               "X: " %+% name.mapping[[variable.pairs[[i]][2]]],
-            visible = T,
             method = "update",
             args = list(
               list(visible = visibles[[i]]),
@@ -422,12 +445,18 @@ server <- function(input, output, session) {
         plt %>%
           layout(
             font = list(color='white'),
+            showlegend = FALSE,
             plot_bgcolor = '#191A1A',
             paper_bgcolor = '#191A1A',
+            xaxis = list(
+              title = name.mapping[[variable.pairs[[1]][2]]]
+            ),
+            yaxis = list(
+              title = name.mapping[[variable.pairs[[1]][1]]]
+            ),
             updatemenus = list(
               list(
-                active = -1,
-                x = 1,
+                x = 1.2,
                 buttons = btns
               )
             )

@@ -8,9 +8,7 @@ services:
       - MAPBOX_TOKEN=${MAPBOX_TOKEN:-token}
       - PASSWORD=${PASSWORD:-passwd}
       - STYLE=${STYLE:-open-street-map}
-    build:
-      context: .
-      dockerfile: Dockerfile
+    build: .
     restart: always
     user: 'root'
     ports:
