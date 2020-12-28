@@ -188,7 +188,12 @@ server <- function(input, output, session) {
       })
     } else{
       bounds <- st_bbox(data)
-      
+      center.lon <- bounds$xmin + (bounds$xmax - bounds$xmin)/2
+      center.lat <- bounds$ymin + (bounds$ymax - bounds$ymin)/2
+      zoom.lon <- log(180/abs(center.lon - bounds$xmin))/log(2)
+      zoom.lat <- log(90/abs(center.lat - bounds$ymin))/log(2)
+      zoom.center <- mean(zoom.lon, zoom.lat)
+
       output$map <- renderPlotly({
         plot_mapbox() %>%
           layout(
@@ -197,8 +202,9 @@ server <- function(input, output, session) {
             paper_bgcolor = '#191A1A',
             mapbox = list(
               style = style,
-              center = list(lat = bounds$ymin + (bounds$ymax - bounds$ymin),
-                            lon = bounds$xmin + (bounds$xmax - bounds$xmin))
+              zoom = zoom.center,
+              center = list(lat = center.lat,
+                            lon = center.lon)
             )
           )
       })
@@ -214,9 +220,14 @@ server <- function(input, output, session) {
       ))
       return()
     }
-    
     bounds <- st_bbox(data)
-    
+    # a very poor approximation, but close enough
+    center.lon <- bounds$xmin + (bounds$xmax - bounds$xmin)/2
+    center.lat <- bounds$ymin + (bounds$ymax - bounds$ymin)/2
+    zoom.lon <- log(180/abs(center.lon - bounds$xmin))/log(2)
+    zoom.lat <- log(90/abs(center.lat - bounds$ymin))/log(2)
+    zoom.center <- (zoom.lon + zoom.lat)/2
+
     withProgress(
       message = 'Calculating GW statistics',
       detail = 'This may take a while...',
@@ -338,10 +349,10 @@ server <- function(input, output, session) {
           ),
           mapbox = list(
             style = style,
-            zoom = 10.55, # replace with auto zoom once available https://github.com/plotly/plotly.js/issues/3434
+            zoom = zoom.center,
             center = list(
-              lat = bounds$ymin + (bounds$ymax - bounds$ymin),
-              lon = bounds$xmin + (bounds$xmax - bounds$xmin)
+              lat = center.lat,
+              lon = center.lon
             )
           )
         )
