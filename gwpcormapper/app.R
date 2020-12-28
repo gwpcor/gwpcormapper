@@ -383,17 +383,21 @@ server <- function(input, output, session) {
         )
 
         for (i in seq_along(variable.pairs)) {
+          set.visible <- FALSE
+          if (i == 1) {
+            set.visible <- TRUE
+          }
           var.y <- variable.pairs[[i]][1]
           var.x <- variable.pairs[[i]][2]
           plt <- plt %>% add_markers(
             text = ~paste('GW coefficient: ', val),
             x = shapefile_selected[[var.x]],
             y = shapefile_selected[[var.y]],
-            showlegend = FALSE,
-            visible = F,
+            visible = set.visible,
             marker=list(
               color = ~val,
-              colors = rpal,
+              colorscale = rpal,
+              reversescale = TRUE,
               cmin = -1,
               cmax = 1,
               colorbar = list(
@@ -404,15 +408,14 @@ server <- function(input, output, session) {
               )
             )
           )
-          visibles[[i]] <- rep(F, length(variable.pairs))
-          visibles[[i]][i] <- T
+          visibles[[i]] <- rep(FALSE, length(variable.pairs))
+          visibles[[i]][i] <- TRUE
 
           btns[[i]] <- list(
             label =
               "Y: " %+% name.mapping[[variable.pairs[[i]][1]]]
                 %+% "\n" %+%
               "X: " %+% name.mapping[[variable.pairs[[i]][2]]],
-            visible = T,
             method = "update",
             args = list(
               list(visible = visibles[[i]]),
@@ -431,12 +434,18 @@ server <- function(input, output, session) {
         plt %>%
           layout(
             font = list(color='white'),
+            showlegend = FALSE,
             plot_bgcolor = '#191A1A',
             paper_bgcolor = '#191A1A',
+            xaxis = list(
+              title = name.mapping[[variable.pairs[[1]][2]]]
+            ),
+            yaxis = list(
+              title = name.mapping[[variable.pairs[[1]][1]]]
+            ),
             updatemenus = list(
               list(
-                active = -1,
-                x = 1,
+                x = 1.2,
                 buttons = btns
               )
             )
