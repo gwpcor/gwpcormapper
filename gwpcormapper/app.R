@@ -130,12 +130,10 @@ server <- function(input, output, session) {
       detail = '...',
       value = 1,
      {
-       # todo: this might fail if data are points, not polygons
        dp.locat <- sf::st_centroid(data) %>% sf::st_coordinates(.)
        dMat <<- gw.dist(dp.locat = dp.locat, p = 2, theta = 0, longlat = F)
      }
     )
-
     
     num_row <<- nrow(data)
 
@@ -234,6 +232,14 @@ server <- function(input, output, session) {
       value = 1,
       {
         rpal <- brewer.pal(n = 8, name = "RdBu")
+        rpal_plotly <- list()
+        rang <- seq_along(rpal)
+        for (ind in rang) {
+          rpal_plotly[[ind]] <- list(
+            (ind - min(rang))/(max(rang) - min(rang)),
+            rpal[ind]
+          )
+        }
         pal1 <- colorBin("RdBu", c(-1,1), bins=11, na.color = "#bdbdbd")
         var1 <- input$input_type1
         var2 <- input$input_type2
@@ -407,8 +413,7 @@ server <- function(input, output, session) {
             visible = set.visible,
             marker=list(
               color = ~val,
-              colorscale = rpal,
-              reversescale = TRUE,
+              colorscale = rpal_plotly,
               cmin = -1,
               cmax = 1,
               colorbar = list(
