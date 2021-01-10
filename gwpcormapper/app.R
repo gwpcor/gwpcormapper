@@ -1,20 +1,13 @@
 library(shiny)
-library(sf)
-library(sp)
-library(tidyverse)
 library(shinydashboard)
-library(shinythemes)
-library(MyRMiscFunc)
+library(sf)
+library(tidyverse)
+library(geodist)
 library(GWpcor)
-library(spdplyr)
-library(GWmodel)
 library(plotly)
-library(RColorBrewer)
-library(dplyr)
 library(crosstalk)
+library(RColorBrewer)
 library(leaflet)
-
-#readRenviron(".env")
 
 style <- Sys.getenv("STYLE")
 token <- Sys.getenv("MAPBOX_TOKEN")
@@ -97,11 +90,6 @@ ui <- dashboardPage(
 server <- function(input, output, session) {
   options(shiny.maxRequestSize = 200*1024^2)
   
-  data <- NULL
-  dMat <- NULL
-  varname <- NULL
-  num_row <- NULL
-  
   makeReactiveBinding("data")
   makeReactiveBinding("dMat")
   makeReactiveBinding("varname")
@@ -131,7 +119,8 @@ server <- function(input, output, session) {
       value = 1,
      {
        dp.locat <- sf::st_centroid(data) %>% sf::st_coordinates(.)
-       dMat <<- gw.dist(dp.locat = dp.locat, p = 2, theta = 0, longlat = F)
+
+       dMat <<- geodist(dp.locat, measure = "cheap")
      }
     )
     
@@ -231,7 +220,7 @@ server <- function(input, output, session) {
       detail = 'This may take a while...',
       value = 1,
       {
-        rpal <- brewer.pal(n = 8, name = "RdBu")
+        rpal <- brewer.pal(n = 11, name = "RdBu")
         rpal_plotly <- list()
         rang <- seq_along(rpal)
         for (ind in rang) {
@@ -251,12 +240,12 @@ server <- function(input, output, session) {
         }
         if (input$radio=="cor") {
           if (input$radio2=="pearson") {
-            vn <- "corr_" %+% var1 %+% "." %+% var2
-            vn2 <- "corr_pval_" %+% var1 %+% "." %+% var2
+            vn <- paste0("corr_", var1, ".", var2)
+            vn2 <- paste0("corr_pval_", var1, ".", var2)
           }
           else {
-            vn <- "scorr_" %+% var1 %+% "." %+% var2
-            vn2 <- "scorr_pval_" %+% var1 %+% "." %+% var2
+            vn <- paste0("scorr_", var1, ".", var2)
+            vn2 <- paste0("scorr_pval_", var1, ".", var2)
           }
           shapefile <- gwpcor_calc(
             sdata = data,
@@ -271,12 +260,12 @@ server <- function(input, output, session) {
         }
         else {
           if (input$radio2=="pearson") {
-            vn <- "pcorr_" %+% var1 %+% "." %+% var2
-            vn2 <- "pcorr_pval_" %+% var1 %+% "." %+% var2
+            vn <- paste0("pcorr_",var1,".",var2)
+            vn2 <- paste0("pcorr_pval_",var1,".",var2)
           }
           else {
-            vn <- "spcorr_" %+% var1 %+% "." %+% var2
-            vn2 <- "spcorr_pval_" %+% var1 %+% "." %+% var2
+            vn <- paste0("spcorr_",var1,".",var2)
+            vn2 <- paste0("spcorr_pval_",var1,".",var2)
           }
           shapefile <- gwpcor_calc(sdata = data,
           var1 = var1,
@@ -296,7 +285,7 @@ server <- function(input, output, session) {
         for (control.variable in var3) {
           shapefile_selected <- cbind(shapefile_selected, data[[control.variable]])
         }
-        var3.names <- "var" %+% 3:(2+length(var3))
+        var3.names <- paste0("var",3:(2+length(var3)))
         table.names <- c(c('val', 'val2', 'var1', 'var2'), var3.names, 'geometry')
         colnames(shapefile_selected) <- table.names
         name.mapping <- c(var1, var2, var3)
@@ -428,10 +417,8 @@ server <- function(input, output, session) {
           visibles[[i]][i] <- TRUE
 
           btns[[i]] <- list(
-            label =
-              "Y: " %+% name.mapping[[variable.pairs[[i]][1]]]
-                %+% "\n" %+%
-              "X: " %+% name.mapping[[variable.pairs[[i]][2]]],
+            label = paste0("Y: ", name.mapping[[variable.pairs[[i]][1]]], "\n",
+                           "X: ", name.mapping[[variable.pairs[[i]][2]]]),
             method = "update",
             args = list(
               list(visible = visibles[[i]]),

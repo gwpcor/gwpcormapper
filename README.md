@@ -1,57 +1,50 @@
 # gwpcorMapper
 __a web-based tool for interactive geographically weighted correlation mapping__
 
-[WIP] This project holds the source code for an interactive mapping application
-map geographically weighted correlation and partial correlation coefficients.
+This project holds the source code for `gwpcorMapper`: an interactive mapping application
+for geographically weighted correlation and partial correlation.
 
-## Usage:
+## Usage
 
-### Pre-requisites:
+You may choose to run gwpcorMapper locally or in a docker container. 
 
-This program runs in a docker container, so all you need is to install
-[docker](https://docs.docker.com/install/) and [docker-compose](https://docs.docker.com/compose/install/)
-on your system.
+### Docker:
 
-### Quick start:
-
-1. Pull the docker containers from Docker hub (in a terminal):
+To run gwpcorMapper in Docker, make sure that you have install [docker](https://docs.docker.com/install/).
+Then, build and launch the container by executing the following commands in a terminal:
 
 ```bash 
-docker pull iosefa/gwpcormapper
+docker build -t gwpcormapper .
+docker run -p 80:3838 gwpcormapper
 ```
 
-2. Start the container: 
+You can use the application in a web browser by going to [http://localhost:8000](http://localhost:8000).
+
+#### Map Styles
+
+gwpcorMapper uses Mapbox for its basemap, so it is possible to change the
+map style by supplying a mapbox token and style definition in the docker run command.
+For example:
 
 ```bash
-docker run -p 80:3838 iosefa/gwpcormapper
+ docker run -e MAPBOX_TOKEN=<your mapbox token> -e STYLE=dark -p 80:3838 gwpcormapper
 ```
 
-Now, open a web browser and go to [localhost](http://localhost:80) and you are all set!
+The default style used is `carto-darkmatter`, which does not require a mapbox token.
 
-To shut down the container:
+### Local:
+
+To run the application locally, make sure the following dependencies are installed:
+
+* R (>= 3.6.3)
+* GDAL (>= 2.4.0)
+* GEOS (>= 3.7.1)
+* Proj.4 (>= 4.8.0)
+
+Then launch the Shiny app in R Studio or your favorite R IDE.
+
+If you dont use an IDE, you can run the following command from this project's directory:
 
 ```bash
-docker stop iosefa/gwpcormapper
+R -e "shiny::runApp('gwpcormapper')"
 ```
-
-### Documentation:
-
-[WIP] Documentation will be added shortly. Please be patient, or feel free to help out!
-
-## Development version:
-
-If you would like to use the latest development version:
-1. clone this repository
-2. in the repository directory, run: 
-
-```bash
-docker-compose build
-docker-compose up -d
-```
-to start the program, and:
-
-```bash
-docker-compose down
-```
-
-to shut down the program.
