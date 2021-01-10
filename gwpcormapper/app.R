@@ -1,19 +1,13 @@
 library(shiny)
-library(sf)
-library(sp)
-library(tidyverse)
 library(shinydashboard)
-library(shinythemes)
+library(sf)
+library(tidyverse)
+library(geodist)
 library(GWpcor)
-library(spdplyr)
-library(GWmodel)
 library(plotly)
-library(RColorBrewer)
-library(dplyr)
 library(crosstalk)
+library(RColorBrewer)
 library(leaflet)
-
-#readRenviron(".env")
 
 style <- Sys.getenv("STYLE")
 token <- Sys.getenv("MAPBOX_TOKEN")
@@ -96,11 +90,6 @@ ui <- dashboardPage(
 server <- function(input, output, session) {
   options(shiny.maxRequestSize = 200*1024^2)
   
-  data <- NULL
-  dMat <- NULL
-  varname <- NULL
-  num_row <- NULL
-  
   makeReactiveBinding("data")
   makeReactiveBinding("dMat")
   makeReactiveBinding("varname")
@@ -130,7 +119,8 @@ server <- function(input, output, session) {
       value = 1,
      {
        dp.locat <- sf::st_centroid(data) %>% sf::st_coordinates(.)
-       dMat <<- gw.dist(dp.locat = dp.locat, p = 2, theta = 0, longlat = F)
+
+       dMat <<- geodist(dp.locat, measure = "cheap")
      }
     )
     
@@ -230,7 +220,7 @@ server <- function(input, output, session) {
       detail = 'This may take a while...',
       value = 1,
       {
-        rpal <- brewer.pal(n = 8, name = "RdBu")
+        rpal <- brewer.pal(n = 11, name = "RdBu")
         rpal_plotly <- list()
         rang <- seq_along(rpal)
         for (ind in rang) {
