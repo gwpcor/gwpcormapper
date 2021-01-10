@@ -1,9 +1,7 @@
 FROM rocker/geospatial:3.6.3
 RUN export ADD=shiny && bash /etc/cont-init.d/add
 
-RUN Rscript -e "install.packages(c('shiny', 'shinyjs', 'shinythemes', 'shinydashboard', 'remotes', 'leaflet', 'corpcor','doParallel', 'here', 'spdplyr', 'GWmodel', 'plotly'), repos='http://cran.rstudio.com/')"
-RUN Rscript -e "remotes::install_github('naru-T/MyRMiscFunc')"
-RUN Rscript -e "remotes::install_github('naru-T/GWpcor')"
+RUN Rscript -e "install.packages(c('shiny', 'shinyjs', 'shinythemes', 'shinydashboard', 'remotes', 'leaflet', 'corpcor','doParallel', 'here', 'spdplyr', 'GWmodel', 'GWpcor', 'plotly'), repos='http://cran.rstudio.com/')"
 
 COPY shiny-server.sh /usr/bin/shiny-server.sh
 COPY shiny-server.conf /etc/shiny-server/shiny-server.conf

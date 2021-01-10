@@ -4,7 +4,6 @@ library(sp)
 library(tidyverse)
 library(shinydashboard)
 library(shinythemes)
-library(MyRMiscFunc)
 library(GWpcor)
 library(spdplyr)
 library(GWmodel)
@@ -251,12 +250,12 @@ server <- function(input, output, session) {
         }
         if (input$radio=="cor") {
           if (input$radio2=="pearson") {
-            vn <- "corr_" %+% var1 %+% "." %+% var2
-            vn2 <- "corr_pval_" %+% var1 %+% "." %+% var2
+            vn <- paste0("corr_", var1, ".", var2)
+            vn2 <- paste0("corr_pval_", var1, ".", var2)
           }
           else {
-            vn <- "scorr_" %+% var1 %+% "." %+% var2
-            vn2 <- "scorr_pval_" %+% var1 %+% "." %+% var2
+            vn <- paste0("scorr_", var1, ".", var2)
+            vn2 <- paste0("scorr_pval_", var1, ".", var2)
           }
           shapefile <- gwpcor_calc(
             sdata = data,
@@ -271,12 +270,12 @@ server <- function(input, output, session) {
         }
         else {
           if (input$radio2=="pearson") {
-            vn <- "pcorr_" %+% var1 %+% "." %+% var2
-            vn2 <- "pcorr_pval_" %+% var1 %+% "." %+% var2
+            vn <- paste0("pcorr_",var1,".",var2)
+            vn2 <- paste0("pcorr_pval_",var1,".",var2)
           }
           else {
-            vn <- "spcorr_" %+% var1 %+% "." %+% var2
-            vn2 <- "spcorr_pval_" %+% var1 %+% "." %+% var2
+            vn <- paste0("spcorr_",var1,".",var2)
+            vn2 <- paste0("spcorr_pval_",var1,".",var2)
           }
           shapefile <- gwpcor_calc(sdata = data,
           var1 = var1,
@@ -296,7 +295,7 @@ server <- function(input, output, session) {
         for (control.variable in var3) {
           shapefile_selected <- cbind(shapefile_selected, data[[control.variable]])
         }
-        var3.names <- "var" %+% 3:(2+length(var3))
+        var3.names <- paste0("var",3:(2+length(var3)))
         table.names <- c(c('val', 'val2', 'var1', 'var2'), var3.names, 'geometry')
         colnames(shapefile_selected) <- table.names
         name.mapping <- c(var1, var2, var3)
@@ -428,10 +427,8 @@ server <- function(input, output, session) {
           visibles[[i]][i] <- TRUE
 
           btns[[i]] <- list(
-            label =
-              "Y: " %+% name.mapping[[variable.pairs[[i]][1]]]
-                %+% "\n" %+%
-              "X: " %+% name.mapping[[variable.pairs[[i]][2]]],
+            label = paste0("Y: ", name.mapping[[variable.pairs[[i]][1]]], "\n",
+                           "X: ", name.mapping[[variable.pairs[[i]][2]]]),
             method = "update",
             args = list(
               list(visible = visibles[[i]]),
