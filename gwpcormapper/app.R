@@ -62,11 +62,11 @@ ui <- dashboardPage(
                                 "Tricube"= "tricube",
                                 "Box-car" = "boxcar"),
                 selected = "bisquare"),
-    sliderInput("slider", "Adaptive kernel size:", 0.1, 1, 0.25),
+    sliderInput("slider", "Adaptive kernel size:", 0.01, 1, 0.25),
     actionButton("submit", "Map Results", icon("map"),
                  style="color: #fff; background-color: #337ab7; border-color: #2e6da4; width: 85%"),
     hr(),
-    sliderInput("slider2", "Map opacity:", 0.1, 1, 0.1)
+    sliderInput("slider2", "Map opacity:", 0, 1, 0.5)
   )),
   dashboardBody(
     tags$head(
@@ -168,7 +168,14 @@ server <- function(input, output, session) {
       zoom.center <- mean(zoom.lon, zoom.lat)
 
       output$map <- renderPlotly({
-        plot_mapbox() %>%
+        plot_mapbox(data) %>%
+          add_sf(
+            color =  I("violet"),
+            opacity = as.numeric(input$slider2),
+            showlegend = FALSE,
+            alpha = as.numeric(input$slider2),
+            hoveron = "fill"
+          ) %>%
           layout(
             font = list(color='white'),
             plot_bgcolor = '#191A1A',
@@ -283,14 +290,14 @@ server <- function(input, output, session) {
 
     output$map <- renderPlotly({
       plot_mapbox(
-        source = "map"
+        source = "map",
+        opacity = as.numeric(input$slider2)
       ) %>%
         add_sf(
           data = shared_data,
           split = ~cut(val, b = c(-1,-.8,-.6, -.4, -.2, 0, .2, .4, .6, .8, 1)),
           color = ~I(pal1(val)),
           colors = rpal,
-          opacity = as.integer(input$slider2),
           showlegend = FALSE,
           text = ~val
         ) %>%
@@ -298,7 +305,6 @@ server <- function(input, output, session) {
           data = shared_data,
           split = ~cut(val2, labels = "> 0.01", b = c(.01, 1)),
           color = I('black'),
-          opacity = as.integer(input$slider2),
           showlegend = TRUE,
           visible = 'legendonly',
           text = ~val
@@ -307,7 +313,6 @@ server <- function(input, output, session) {
           data = shared_data,
           split = ~cut(val2, labels = "> 0.05", b = c(.05, 1)),
           color = I('black'),
-          opacity = as.integer(input$slider2),
           showlegend = TRUE,
           visible = 'legendonly',
           text = ~val
