@@ -5,7 +5,7 @@ library(tidyverse)
 library(geodist)
 library(plotly)
 library(crosstalk)
-library(RColorBrewer)
+library(viridis)
 library(leaflet)
 
 source("gwpcormapper/src/optimized_gwpcor.R")
@@ -206,7 +206,7 @@ server <- function(input, output, session) {
       detail = 'This may take a while...',
       value = 1,
       {
-        rpal <- brewer.pal(n = 11, name = "RdBu")
+        rpal <- viridis_pal(option = "D")(3)
         rpal_plotly <- list()
         rang <- seq_along(rpal)
         for (ind in rang) {
@@ -215,7 +215,7 @@ server <- function(input, output, session) {
             rpal[ind]
           )
         }
-        pal1 <- colorBin("RdBu", c(-1,1), bins=11, na.color = "#bdbdbd")
+        pal1 <- colorBin(rpal, c(-1,1), bins=11, na.color = "#bdbdbd")
         var1 <- input$input_type1
         var2 <- input$input_type2
         if (is.null(input$input_type3)) {
