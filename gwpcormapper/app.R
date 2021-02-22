@@ -3,11 +3,12 @@ library(shinydashboard)
 library(sf)
 library(tidyverse)
 library(geodist)
-library(GWpcor)
 library(plotly)
 library(crosstalk)
 library(RColorBrewer)
 library(leaflet)
+
+source("gwpcormapper/src/optimized_gwpcor.R")
 
 style <- Sys.getenv("STYLE")
 token <- Sys.getenv("MAPBOX_TOKEN")
@@ -94,21 +95,6 @@ server <- function(input, output, session) {
   makeReactiveBinding("dMat")
   makeReactiveBinding("varname")
   makeReactiveBinding("num_row")
-  
-  # gwpcor wrapper function
-  gwpcor_calc <- function(sdata, var1, var2, var3, method, kernel, b, dMat) {
-    selected_vars <- c(var1, var2, var3)
-    out <- gwpcor(sdata=sdata,
-                  vars=selected_vars,
-                  method=method,
-                  kernel=kernel,
-                  bw=b,
-                  adaptive=TRUE,
-                  dMat=dMat
-    )
-    result <- out$SDF %>% st_transform(.,4326)
-    return(result)
-  }
 
   observeEvent(input$file1, {
     data <- sf::st_read(input$file1$datapath) %>% st_transform(.,4326)
@@ -247,16 +233,16 @@ server <- function(input, output, session) {
             vn <- paste0("scorr_", var1, ".", var2)
             vn2 <- paste0("scorr_pval_", var1, ".", var2)
           }
-          shapefile <- gwpcor_calc(
+          selected_vars <- c(var1, var2, var3)
+          shapefile <- gwpcor(
             sdata = data,
-            var1 = var1,
-            var2 = var2,
-            var3 = var3,
+            vars = selected_vars,
             method = input$radio2,
             kernel = input$input_type4,
-            b = input$slider,
+            bw = input$slider,
+            adaptive = TRUE,
             dMat = dMat
-          )
+          )$SDF %>% st_transform(.,4326)
         }
         else {
           if (input$radio2=="pearson") {
@@ -267,14 +253,15 @@ server <- function(input, output, session) {
             vn <- paste0("spcorr_",var1,".",var2)
             vn2 <- paste0("spcorr_pval_",var1,".",var2)
           }
-          shapefile <- gwpcor_calc(sdata = data,
-          var1 = var1,
-          var2 = var2,
-          var3 = var3,
-          method = input$radio2,
-          kernel = input$input_type4,
-          b = input$slider,
-          dMat = dMat)
+          selected_vars <- c(var1, var2, var3)
+          shapefile <- gwpcor(
+            sdata = data,
+            vars = selected_vars,
+            method = input$radio2,
+            kernel = input$input_type4,
+            bw = input$slider,
+            adaptive = TRUE,
+            dMat = dMat)$SDF %>% st_transform(.,4326)
         }
         shapefile_selected <- shapefile %>%
           dplyr::rename(val = vn) %>%
