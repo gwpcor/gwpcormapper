@@ -6,7 +6,7 @@
 library(corpcor)
 library(Rcpp)
 
-sourceCpp("/Users/iosefa/repos/iosefa/GWpcor/src/gwpcor.cpp")
+sourceCpp("gwpcormapper/src/gwpcor.cpp")
 
 gwpcor <- function(sdata, vars, method = c("pearson", "spearman"),
                    kernel = "bisquare", adaptive = FALSE, bw, dMat) {
@@ -35,7 +35,7 @@ gwpcor <- function(sdata, vars, method = c("pearson", "spearman"),
 
   if (anyNA(x)) stop(" NA values are not allowed")
 
-  name.comb <- c()
+  name.comb <- NULL
   n <- 1
   for (i in 1:(var_n - 1)) {
     for (j in (i + 1):var_n) {

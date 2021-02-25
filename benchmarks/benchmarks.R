@@ -1,6 +1,8 @@
-# Title     : TODO
-# Objective : TODO
-# Created by: iosefa
+# Title     : Benchmark comparisons for gwpcorMapper
+# Objective : Creates benchmark tests for gwpcorMapper and similar functions 
+#             that can be used to calculatae geographically weighted correlation
+#             coefficients.
+# Created by: Joseph Emile Honour Percival
 # Created on: 2021/02/20
 library(sf)
 library(geodist)
@@ -10,10 +12,9 @@ library(GWpcor)
 library(spgwr)
 library(lctools)
 library(Rcpp)
-library(microbenchmark)
 library(bench)
 
-source("gwpcormapper/src/optimized_gwpcor.R")
+source("../gwpcormapper/src/optimized_gwpcor.R")
 
 # load data in various required formats
 
@@ -21,7 +22,7 @@ source("gwpcormapper/src/optimized_gwpcor.R")
 selected_vars <- c("Total.Population", "Daytime.Population", "Population.Density")
 
 # sf
-sdata <- st_read("data/tokyo2005_sf_en.gpkg") %>%
+sdata <- st_read("../data/tokyo2005_sf_en.gpkg") %>%
   st_transform(.,4326)
 
 # spdf
@@ -41,7 +42,7 @@ bwgwss <- round(bw*nrow(data))
 adaptive <- TRUE
 
 # coordinates
-dp.locat <- st_centroid(sdata) %>% st_coordinates(.)
+dp.locat <- st_centroid(sdata) %>% st_coordinates()
 
 # distance matrix
 dMat <- geodist(dp.locat, measure = "cheap")
@@ -188,6 +189,8 @@ lctools.tim <- bench_time(
 
 b5 <- c(lctools.mem[1, 1], lctools.tim) %>% as.data.frame()  
 
-
+#############################
+###### BENCHMARK TABLE ######
+#############################
 
 benchmark <- rbind(b5, b4, b3, b2, b1)

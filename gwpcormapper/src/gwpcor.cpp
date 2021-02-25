@@ -209,10 +209,10 @@ List gwpcorRcpp(NumericMatrix dMat, double bw, NumericMatrix x,
         NumericMatrix pcorrPval_matrix = pcorrPval(pcorrMatrix, len);
 
         corrMat(j, _) = lower(corrMatrix);
-        corrMat_pval(j, _) = lower(corrMatrix);
+        corrMat_pval(j, _) = lower(corrPval_matrix);
 
         pcorrMat(j, _) = lower(pcorrMatrix);
-        pcorrMat_pval(j, _) = lower(pcorrMatrix);
+        pcorrMat_pval(j, _) = lower(pcorrPval_matrix);
     }
     List out = List::create(corrMat, corrMat_pval, pcorrMat, pcorrMat_pval);
     return out;

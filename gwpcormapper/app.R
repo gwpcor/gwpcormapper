@@ -90,52 +90,57 @@ ui <- dashboardPage(
 
 server <- function(input, output, session) {
   options(shiny.maxRequestSize = 200*1024^2)
-  
-  makeReactiveBinding("data")
-  makeReactiveBinding("dMat")
-  makeReactiveBinding("varname")
-  makeReactiveBinding("num_row")
+
+  # reactiveValues object for storing current data set.
+  vals <- reactiveValues(
+    data = NULL,
+    dMat = NULL,
+    center = NULL,
+    zoom = NULL
+  )
 
   observeEvent(input$file1, {
-    data <- sf::st_read(input$file1$datapath) %>% st_transform(.,4326)
-  
-    withProgress(
-      message = 'Building distance matrix',
-      detail = '...',
-      value = 1,
-     {
-       dp.locat <- sf::st_centroid(data) %>% sf::st_coordinates(.)
+    data <- sf::st_read(input$file1$datapath) %>% st_transform(4326)
+    num_row <- nrow(data)
+    num_col <- ncol(data)
+    varnames <- colnames(data) # probably should remove "geom"
 
-       dMat <<- geodist(dp.locat, measure = "cheap")
-     }
-    )
-    
-    num_row <<- nrow(data)
+    if (num_col < 3) {
+      showModal(modalDialog(
+        title = "Invalid Data",
+        "Data must have at least 2 variables for GW correlation."
+      ))
+    }
+    else {
+      dummy <- 1:num_row
+      vals$data <- cbind(data, dummy)
 
-    dummy <- 1:num_row
-    data <- st_sf(data.frame(data, as.data.frame(dummy)))
-
-    data.copy <- data
-    st_geometry(data.copy) <- NULL
-    
-    varname <<- colnames(data.copy)
-    data <<- data
-
-    updateSelectInput(session, "input_type1",
-                      label = "Corellation pair 1",
-                      choices = varname[!varname %in% "dummy"],
-                      selected = varname[1]
-    )
-    
-    updateSelectInput(session, "input_type2",
-                      label = "Corellation pair 2",
-                      choices = varname[!varname %in% "dummy"],
-                      selected = varname[2]
-    )
-    updateSelectInput(session, "input_type3",
-                        label = "Control variables",
-                        choices = varname
+      withProgress(
+        message = 'Building distance matrix',
+        detail = '...',
+        value = 1,
+      {
+        dp.locat <- sf::st_centroid(data) %>% sf::st_coordinates()
+        vals$dMat <- geodist(dp.locat, measure = "cheap")
+      }
       )
+
+      updateSelectInput(session, "input_type1",
+                        label = "Corellation pair 1",
+                        choices = varnames[!varnames %in% "dummy"],
+                        selected = varnames[1]
+      )
+
+      updateSelectInput(session, "input_type2",
+                        label = "Corellation pair 2",
+                        choices = varnames[!varnames %in% "dummy"],
+                        selected = varnames[2]
+      )
+      updateSelectInput(session, "input_type3",
+                        label = "Control variables",
+                        choices = varnames[!varnames %in% "dummy"]
+      )
+    }
   })
   
   observe({
@@ -159,16 +164,19 @@ server <- function(input, output, session) {
               paper_bgcolor = '#191A1A'
             ) 
       })
-    } else{
-      bounds <- st_bbox(data)
+    }
+    else {
+      bounds <- st_bbox(vals$data)
       center.lon <- bounds$xmin + (bounds$xmax - bounds$xmin)/2
       center.lat <- bounds$ymin + (bounds$ymax - bounds$ymin)/2
       zoom.lon <- log(180/abs(center.lon - bounds$xmin))/log(2)
       zoom.lat <- log(90/abs(center.lat - bounds$ymin))/log(2)
-      zoom.center <- mean(zoom.lon, zoom.lat)
+
+      vals$center <- c(center.lon, center.lat)
+      vals$zoom <- mean(zoom.lon, zoom.lat)
 
       output$map <- renderPlotly({
-        plot_mapbox(data) %>%
+        plot_mapbox(vals$data) %>%
           add_sf(
             color =  I("violet"),
             opacity = as.numeric(input$slider2),
@@ -182,16 +190,16 @@ server <- function(input, output, session) {
             paper_bgcolor = '#191A1A',
             mapbox = list(
               style = style,
-              zoom = zoom.center,
-              center = list(lat = center.lat,
-                            lon = center.lon)
+              zoom = vals$zoom,
+              center = list(lat = vals$center[2],
+                            lon = vals$center[1])
             )
           )
       })
-
     }
   })
-  
+
+  # need to add observe event to update variable selections
   observeEvent(input$submit, {
     if (is.null(input$file1)) {
       showModal(modalDialog(
@@ -200,20 +208,13 @@ server <- function(input, output, session) {
       ))
       return()
     }
-    bounds <- st_bbox(data)
-    # a very poor approximation, but close enough
-    center.lon <- bounds$xmin + (bounds$xmax - bounds$xmin)/2
-    center.lat <- bounds$ymin + (bounds$ymax - bounds$ymin)/2
-    zoom.lon <- log(180/abs(center.lon - bounds$xmin))/log(2)
-    zoom.lat <- log(90/abs(center.lat - bounds$ymin))/log(2)
-    zoom.center <- (zoom.lon + zoom.lat)/2
 
     withProgress(
       message = 'Calculating GW statistics',
       detail = 'This may take a while...',
       value = 1,
       {
-        rpal <- viridis_pal(option = "D")(3)
+        rpal <- viridis_pal(option = "D")(11)
         rpal_plotly <- list()
         rang <- seq_along(rpal)
         for (ind in rang) {
@@ -242,13 +243,13 @@ server <- function(input, output, session) {
           }
           selected_vars <- c(var1, var2, var3)
           shapefile <- gwpcor(
-            sdata = data,
+            sdata = vals$data,
             vars = selected_vars,
             method = input$radio2,
             kernel = input$input_type4,
             bw = input$slider,
             adaptive = TRUE,
-            dMat = dMat
+            dMat = vals$dMat
           )$SDF %>% st_transform(.,4326)
         }
         else {
@@ -262,22 +263,22 @@ server <- function(input, output, session) {
           }
           selected_vars <- c(var1, var2, var3)
           shapefile <- gwpcor(
-            sdata = data,
+            sdata = vals$data,
             vars = selected_vars,
             method = input$radio2,
             kernel = input$input_type4,
             bw = input$slider,
             adaptive = TRUE,
-            dMat = dMat)$SDF %>% st_transform(.,4326)
+            dMat = vals$dMat)$SDF %>% st_transform(.,4326)
         }
         shapefile_selected <- shapefile %>%
           dplyr::rename(val = vn) %>%
           dplyr::rename(val2 = vn2) %>%
-          dplyr::mutate(var1 = data[[var1]],
-        var2 = data[[var2]]) %>%
+          dplyr::mutate(var1 = vals$data[[var1]],
+        var2 = vals$data[[var2]]) %>%
           dplyr::select(val, val2, var1, var2)
         for (control.variable in var3) {
-          shapefile_selected <- cbind(shapefile_selected, data[[control.variable]])
+          shapefile_selected <- cbind(shapefile_selected, vals$data[[control.variable]])
         }
         var3.names <- paste0("var",3:(2+length(var3)))
         table.names <- c(c('val', 'val2', 'var1', 'var2'), var3.names, 'geometry')
@@ -336,10 +337,10 @@ server <- function(input, output, session) {
           ),
           mapbox = list(
             style = style,
-            zoom = zoom.center,
+            zoom = vals$zoom,
             center = list(
-              lat = center.lat,
-              lon = center.lon
+              lat = vals$center[2],
+              lon = vals$center[1]
             )
           )
         )

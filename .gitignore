@@ -6,3 +6,6 @@
 .idea
 data/*.geojson
 .DS_Store
+benchmarks/cb_2019_us_county_500k/
+benchmarks/cb_2019_us_cousub_500k/
+benchmarks/cb_2019_us_state_500k/
