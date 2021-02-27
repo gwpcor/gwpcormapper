@@ -1,3 +1,7 @@
+# Title     : gwpcorMapper
+# Objective : Interactive mapping for geographically weighted correlation and partial correlation with R Shiny.
+# Created by: Joseph Percival and Narumasa Tsutsumida
+# Created on: 2019/10/10
 library(shiny)
 library(shinydashboard)
 library(sf)
@@ -8,7 +12,6 @@ library(crosstalk)
 library(viridis)
 library(leaflet)
 
-source("gwpcormapper/src/optimized_gwpcor.R")
 source("gwpcormapper/src/helpers.R")
 
 style <- Sys.getenv("STYLE")
@@ -112,6 +115,26 @@ server <- function(input, output, session) {
     zoom = NULL
   )
 
+  output$map <- renderPlotly({
+    plot_mapbox() %>%
+      layout(
+        title=list(text = "Please load data", y = 0.5),
+        font = list(color='white'),
+        plot_bgcolor = '#191A1A',
+        paper_bgcolor = '#191A1A',
+        mapbox = list(style = style)
+      )
+  })
+
+  output$plot <- renderPlotly({
+    plotly_empty() %>%
+      layout(
+        font = list(color='white'),
+        plot_bgcolor = '#191A1A',
+        paper_bgcolor = '#191A1A'
+      )
+  })
+
   observeEvent(input$file1, {
     data <- sf::st_read(input$file1$datapath) %>% st_transform(4326)
     num_row <- nrow(data)
@@ -155,57 +178,28 @@ server <- function(input, output, session) {
                         choices = varnames[!varnames %in% "dummy"]
       )
     }
-  })
 
-  # todo: remove observe as this is probably quite taxing.
-  observe({
-    if (is.null(input$file1)) {
-      output$map <- renderPlotly({
-        plot_mapbox() %>%
-          layout(
-            title=list(text = "Please load data", y = 0.5),
-            font = list(color='white'),
-            plot_bgcolor = '#191A1A',
-            paper_bgcolor = '#191A1A',
-            mapbox = list(style = style)
-          )
-      })
-      
-      output$plot <- renderPlotly({
-          plotly_empty() %>%
-            layout(
-              font = list(color='white'),
-              plot_bgcolor = '#191A1A',
-              paper_bgcolor = '#191A1A'
-            ) 
-      })
-    }
-    else {
-      view.extent <- get.viewExtent(vals$data)
-      vals$center <- view.extent[[1]]
-      vals$zoom <- view.extent[[2]]
+    view.extent <- get.viewExtent(vals$data)
+    vals$center <- view.extent[[1]]
+    vals$zoom <- view.extent[[2]]
 
-      map.features <- plot_mapbox(vals$data) %>%
-        add_sf(
-          color =  I("violet"),
-          opacity = as.numeric(input$slider2),
-          showlegend = FALSE,
-          alpha = as.numeric(input$slider2),
-          hoveron = "fill"
-        ) %>%
-        layout(
-          font = list(color='white'),
-          plot_bgcolor = '#191A1A',
-          paper_bgcolor = '#191A1A',
-          mapbox = list(
-            style = style,
-            zoom = vals$zoom,
-            center = list(lat = vals$center[2],
-                          lon = vals$center[1])
-          )
+    map.features <- plot_mapbox(data = vals$data, opacity = input$slider2) %>%
+      add_sf(
+        color =  I("violet"),
+        showlegend = FALSE
+      ) %>%
+      layout(
+        font = list(color='white'),
+        plot_bgcolor = '#191A1A',
+        paper_bgcolor = '#191A1A',
+        mapbox = list(
+          style = style,
+          zoom = vals$zoom,
+          center = list(lat = vals$center[2],
+                        lon = vals$center[1])
         )
-      output$map <- renderPlotly({map.features})
-    }
+      )
+    output$map <- renderPlotly({map.features})
   })
 
   # todo: add observe event to update variable selections
@@ -276,6 +270,7 @@ server <- function(input, output, session) {
         }
 
         var3.names <- paste0("var",3:(2+length(var3)))
+        # print(var3.names)
         table.names <- c(c('val', 'val2', 'var1', 'var2'), var3.names, 'geometry')
         colnames(gwpcor.surface) <- table.names
         name.mapping <- c(var1, var2, var3)
@@ -345,106 +340,114 @@ server <- function(input, output, session) {
     )
     
     # scatter plots
-    if (input$radio=="cor") {
-      plt <- plot_ly(
-        shared_data,
-        x = ~var2,
-        y = ~var1,
-        text = ~paste('GW coefficient: ', val)
-      ) %>%
-        layout(
-          font = list(color='white'),
-          plot_bgcolor = '#191A1A',
-          paper_bgcolor = '#191A1A',
-          xaxis = list(title = input$input_type2),
-          yaxis = list(title = input$input_type1)
+    output$plot <- renderPlotly({
+      if (input$radio=="cor") {
+        plot_ly(
+          shared_data,
+          x = ~var2,
+          y = ~var1,
+          text = ~paste('GW coefficient: ', val)
         ) %>%
-        add_trace(type = "scatter",
-                  mode = "markers",
-                  color = ~val,
-                  colors = rpal
-        ) %>%
-        colorbar(title = "Correlation\nCoefficient", limits = c(-1, 1), len = 0.9, nticks = 11) %>%
-        highlight("plotly_click", color = "red")
-    }
-    else {
-      variables <- table.names[3:(length(table.names)-1)]
-      variable.pairs <- combn(variables, 2, simplify=F)
+          layout(
+            font = list(color='white'),
+            plot_bgcolor = '#191A1A',
+            paper_bgcolor = '#191A1A',
+            xaxis = list(title = input$input_type2),
+            yaxis = list(title = input$input_type1)
+          ) %>%
+          add_trace(type = "scatter",
+                    mode = "markers",
+                    color = ~val,
+                    colors = rpal
+          ) %>%
+          colorbar(title = "Correlation\nCoefficient", limits = c(-1, 1), len = 0.9, nticks = 11) %>%
+          highlight("plotly_click", color = "red")
+      }
+      else {
+        variables <- table.names[3:(length(table.names)-1)]
+        variable.pairs <- combn(variables, 2, simplify=F)
 
-      btns <- list()
-      visibles <- list()
+        btns <- list()
+        visibles <- list()
 
-      plt <- plot_ly(
-        shared_data
-      )
+        plt <- plot_ly(
+          shared_data
+        )
 
-      for (i in seq_along(variable.pairs)) {
-        set.visible <- FALSE
-        if (i == 1) {
-          set.visible <- TRUE
-        }
-        var.y <- variable.pairs[[i]][1]
-        var.x <- variable.pairs[[i]][2]
-
-        visibles[[i]] <- rep(FALSE, length(variable.pairs))
-        visibles[[i]][i] <- TRUE
-
-        btns[[i]] <- list(
-          label = paste0("Y: ", name.mapping[[variable.pairs[[i]][1]]], "\n",
-                         "X: ", name.mapping[[variable.pairs[[i]][2]]]),
-          method = "update",
-          args = list(
-            list(visible = visibles[[i]]),
-            list(
-              xaxis = list(
-                title = name.mapping[[variable.pairs[[i]][2]]]
-              ),
-              yaxis = list(
-                title = name.mapping[[variable.pairs[[i]][1]]]
+        for (i in seq_along(variable.pairs)) {
+          set.visible <- FALSE
+          if (i == 1) {
+            set.visible <- TRUE
+          }
+          var.y <- variable.pairs[[i]][1]
+          var.x <- variable.pairs[[i]][2]
+          plt <- plt %>% add_markers(
+            text = ~paste('GW coefficient: ', val),
+            x = gwpcor.surface[[var.x]],
+            y = gwpcor.surface[[var.y]],
+            visible = set.visible,
+            marker=list(
+              color = ~val,
+              colorscale = rpal_plotly,
+              cmin = -1,
+              cmax = 1,
+              colorbar = list(
+                title = "Correlation\nCoefficient",
+                limits = c(-1, 1),
+                len = 0.9,
+                nticks = 11
               )
             )
           )
-        )
-        plt <- plt %>% add_markers(
-          text = ~paste('GW coefficient: ', val),
-          x = gwpcor.surface[[var.x]],
-          y = gwpcor.surface[[var.y]],
-          visible = set.visible,
-          marker=list(
-            color = ~val,
-            colorscale = rpal_plotly,
-            cmin = -1,
-            cmax = 1,
-            colorbar = list(
-              title = "Correlation\nCoefficient",
-              limits = c(-1, 1),
-              len = 0.9,
-              nticks = 11
+          visibles[[i]] <- rep(FALSE, length(variable.pairs))
+          visibles[[i]][i] <- TRUE
+
+          btns[[i]] <- list(
+            label = paste0("Y: ", name.mapping[[variable.pairs[[i]][1]]], "\n",
+                           "X: ", name.mapping[[variable.pairs[[i]][2]]]),
+            method = "update",
+            args = list(
+              list(visible = visibles[[i]]),
+              list(
+                xaxis = list(
+                  title = name.mapping[[variable.pairs[[i]][2]]]
+                ),
+                yaxis = list(
+                  title = name.mapping[[variable.pairs[[i]][1]]]
+                )
+              )
             )
           )
-        ) %>% layout(
-          font = list(color='white'),
-          showlegend = FALSE,
-          plot_bgcolor = '#191A1A',
-          paper_bgcolor = '#191A1A',
-          xaxis = list(
-            title = name.mapping[[variable.pairs[[1]][2]]]
-          ),
-          yaxis = list(
-            title = name.mapping[[variable.pairs[[1]][1]]]
-          ),
-          updatemenus = list(
-            list(
-              x = 1.2,
-              buttons = btns
+        }
+        plt %>%
+          layout(
+            font = list(color='white'),
+            showlegend = FALSE,
+            plot_bgcolor = '#191A1A',
+            paper_bgcolor = '#191A1A',
+            xaxis = list(
+              title = name.mapping[[variable.pairs[[1]][2]]]
+            ),
+            yaxis = list(
+              title = name.mapping[[variable.pairs[[1]][1]]]
+            ),
+            updatemenus = list(
+              list(
+                x = 1.2,
+                buttons = btns
+              )
             )
-          )
-        ) %>%
+          ) %>%
           highlight("plotly_click", color = "red")
       }
-    }
-    output$plot <- renderPlotly({plt})
+    })
   })
+
+  observeEvent(input$slider2, {
+    plotlyProxy("map", session) %>%
+    plotlyProxyInvoke("restyle", list(opacity=input$slider2))
+  })
+
 }
 
 shinyApp(ui, server)

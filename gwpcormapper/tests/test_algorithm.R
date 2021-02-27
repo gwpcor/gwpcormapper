@@ -10,7 +10,7 @@ library(GWpcor)
 library(Rcpp)
 library(corpcor)
 
-source("gwpcormapper/src/optimized_gwpcor.R")
+source("gwpcormapper/src/helpers.R")
 
 # load data in various required formats
 
@@ -41,7 +41,6 @@ method <- "pearson"
 # kernel
 kernel <- "bisquare"
 
-source("gwpcormapper/src/optimized_gwpcor.R")
 app <- gwpcor(
   sdata=sdata,
   vars=selected_vars,

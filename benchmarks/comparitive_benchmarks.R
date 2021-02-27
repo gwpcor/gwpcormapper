@@ -14,7 +14,7 @@ library(lctools)
 library(Rcpp)
 library(bench)
 
-source("../gwpcormapper/src/optimized_gwpcor.R")
+source("../gwpcormapper/src/helpers.R")
 
 # load data in various required formats
 

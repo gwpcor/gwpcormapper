@@ -1,6 +1,6 @@
-# Title     : S1 Supplmentary Material for gwpcorMapper: an interactive mapping tool for exploring geographically weighted correlation and partial correlation in high-dimensional geospatial datasets
-# Objective : Runs benchmark tests for gwpcorMapper's core algorithmn function.
-# Created by: Joseph Emile Honour Percival
+# Title     : gwpcor benchmark
+# Objective : Runs benchmark tests for gwpcor: gwpcorMapper's core algorithmn function.
+# Created by: Joseph Percival
 # Created on: 2021/02/20
 
 library(sf)
@@ -18,7 +18,7 @@ library(bench)
 # https://github.com/naru-T/gwpcormapper
 # and then set the R working directory to the cloned repository.
 
-source("../gwpcormapper/src/optimized_gwpcor.R")
+source("../gwpcormapper/src/helpers.R")
 
 ###############################
 ######### SAMPLE DATA #########

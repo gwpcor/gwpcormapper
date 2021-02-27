@@ -1,5 +1,7 @@
 //
 // Created by Joseph Percival on 2021/02/20.
+// The Function for correlation matrices were based on the functions
+// written by Anders Ellern Bilgrau (https://github.com/AEBilgrau/correlateR/blob/master/src/covFamily.cpp)
 //
 
 #include <Rcpp.h>
@@ -123,7 +125,6 @@ NumericMatrix cor_wt(NumericMatrix P, NumericVector Wi) {
             cor(j, i) = cor(i, j);
         }
     }
-
     return cor;
 }
 
