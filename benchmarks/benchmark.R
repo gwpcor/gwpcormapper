@@ -18,7 +18,7 @@ library(bench)
 # https://github.com/naru-T/gwpcormapper
 # and then set the R working directory to the cloned repository.
 
-source("../gwpcormapper/src/helpers.R")
+source("../gwpcormapper/helpers.R")
 
 ###############################
 ######### SAMPLE DATA #########

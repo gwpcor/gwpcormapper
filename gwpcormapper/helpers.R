@@ -5,7 +5,7 @@
 library(sf)
 library(corpcor)
 library(Rcpp)
-sourceCpp("gwpcormapper/src/gwpcor.cpp")
+sourceCpp("gwpcor.cpp")
 
 # Simple funciton to get view extent.
 get.viewExtent <- function(data) {

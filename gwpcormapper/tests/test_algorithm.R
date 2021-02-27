@@ -10,7 +10,7 @@ library(GWpcor)
 library(Rcpp)
 library(corpcor)
 
-source("gwpcormapper/src/helpers.R")
+source("../helpers.R")
 
 # load data in various required formats
 
@@ -78,7 +78,7 @@ corr.pval <- function (m, n) {
 }
 
 dist.vi <- dMat[, 100]
-sourceCpp("gwpcormapper/src/gwpcor.cpp")
+sourceCpp("../gwpcor.cpp")
 W.i <- calc_weight(type = kernel, adapt = adaptive, dist_vec =dist.vi, bw =bw)
 sum.w <- sum(W.i)
 Wi <- W.i / sum.w
