@@ -14,16 +14,34 @@ library(leaflet)
 
 source("gwpcormapper/src/helpers.R")
 
+readRenviron(".env")
+
 style <- Sys.getenv("STYLE")
 token <- Sys.getenv("MAPBOX_TOKEN")
+source <- Sys.getenv("SOURCE")
+layers <- NULL
 
-if (style == '') {
+if (style == '' && source == '') {
   style <- 'carto-darkmatter'
+}
+
+if (source != '') {
+  # override style if tile layer is given!
+  style <- 'white-bg'
+  layers <- list(list(
+    below = 'traces',
+    sourcetype = "raster",
+    source = list(source)))
 }
 
 if (token == '') {
   Sys.setenv('MAPBOX_TOKEN' = 'token')
 }
+
+mapbox.layout <- list(
+  style = style,
+  layers = layers
+)
 
 # define color schemes
 rpal <- viridis_pal(option = "D")(11)
@@ -122,7 +140,7 @@ server <- function(input, output, session) {
         font = list(color='white'),
         plot_bgcolor = '#191A1A',
         paper_bgcolor = '#191A1A',
-        mapbox = list(style = style)
+        mapbox=mapbox.layout
       )
   })
 
@@ -192,11 +210,13 @@ server <- function(input, output, session) {
         font = list(color='white'),
         plot_bgcolor = '#191A1A',
         paper_bgcolor = '#191A1A',
-        mapbox = list(
-          style = style,
-          zoom = vals$zoom,
-          center = list(lat = vals$center[2],
-                        lon = vals$center[1])
+        mapbox = c(
+          mapbox.layout,
+          list(
+            zoom = vals$zoom,
+            center = list(lat = vals$center[2],
+                          lon = vals$center[1])
+          )
         )
       )
     output$map <- renderPlotly({map.features})
@@ -327,12 +347,12 @@ server <- function(input, output, session) {
             x = 0.5,
             yanchor = "bottom"
           ),
-          mapbox = list(
-            style = style,
-            zoom = vals$zoom,
-            center = list(
-              lat = vals$center[2],
-              lon = vals$center[1]
+          mapbox = c(
+            mapbox.layout,
+            list(
+              zoom = vals$zoom,
+              center = list(lat = vals$center[2],
+                            lon = vals$center[1])
             )
           )
         )
