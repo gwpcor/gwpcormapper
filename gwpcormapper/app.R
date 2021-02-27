@@ -1,24 +1,59 @@
+# Title     : gwpcorMapper
+# Objective : Interactive mapping for geographically weighted correlation and partial correlation with R Shiny.
+# Created by: Joseph Percival and Narumasa Tsutsumida
+# Created on: 2019/10/10
 library(shiny)
 library(shinydashboard)
 library(sf)
 library(tidyverse)
 library(geodist)
-library(GWpcor)
 library(plotly)
 library(crosstalk)
-library(RColorBrewer)
+library(viridis)
 library(leaflet)
+
+source("gwpcormapper/helpers.R")
+
+readRenviron(".env")
 
 style <- Sys.getenv("STYLE")
 token <- Sys.getenv("MAPBOX_TOKEN")
+source <- Sys.getenv("SOURCE")
+layers <- NULL
 
-if (style == '') {
+if (style == '' && source == '') {
   style <- 'carto-darkmatter'
+}
+
+if (source != '') {
+  # override style if tile layer is given!
+  style <- 'white-bg'
+  layers <- list(list(
+    below = 'traces',
+    sourcetype = "raster",
+    source = list(source)))
 }
 
 if (token == '') {
   Sys.setenv('MAPBOX_TOKEN' = 'token')
 }
+
+mapbox.layout <- list(
+  style = style,
+  layers = layers
+)
+
+# define color schemes
+rpal <- viridis_pal(option = "D")(11)
+rpal_plotly <- list()
+rang <- seq_along(rpal)
+for (ind in rang) {
+  rpal_plotly[[ind]] <- list(
+    (ind - min(rang))/(max(rang) - min(rang)),
+    rpal[ind]
+  )
+}
+pal1 <- colorBin(rpal, c(-1,1), bins=11, na.color = "#bdbdbd")
 
 ui <- dashboardPage(
   dashboardHeader(title = "gwpcorMapper"),
@@ -61,11 +96,11 @@ ui <- dashboardPage(
                                 "Tricube"= "tricube",
                                 "Box-car" = "boxcar"),
                 selected = "bisquare"),
-    sliderInput("slider", "Adaptive kernel size:", 0.1, 1, 0.25),
+    sliderInput("slider", "Adaptive kernel size:", 0.01, 1, 0.25),
     actionButton("submit", "Map Results", icon("map"),
                  style="color: #fff; background-color: #337ab7; border-color: #2e6da4; width: 85%"),
     hr(),
-    sliderInput("slider2", "Map opacity:", 0.1, 1, 0.1)
+    sliderInput("slider2", "Map opacity:", 0, 1, 0.5)
   )),
   dashboardBody(
     tags$head(
@@ -89,116 +124,105 @@ ui <- dashboardPage(
 
 server <- function(input, output, session) {
   options(shiny.maxRequestSize = 200*1024^2)
-  
-  makeReactiveBinding("data")
-  makeReactiveBinding("dMat")
-  makeReactiveBinding("varname")
-  makeReactiveBinding("num_row")
-  
-  # gwpcor wrapper function
-  gwpcor_calc <- function(sdata, var1, var2, var3, method, kernel, b, dMat) {
-    selected_vars <- c(var1, var2, var3)
-    out <- gwpcor(sdata=sdata,
-                  vars=selected_vars,
-                  method=method,
-                  kernel=kernel,
-                  bw=b,
-                  adaptive=TRUE,
-                  dMat=dMat
-    )
-    result <- out$SDF %>% st_transform(.,4326)
-    return(result)
-  }
 
-  observeEvent(input$file1, {
-    data <- sf::st_read(input$file1$datapath) %>% st_transform(.,4326)
-  
-    withProgress(
-      message = 'Building distance matrix',
-      detail = '...',
-      value = 1,
-     {
-       dp.locat <- sf::st_centroid(data) %>% sf::st_coordinates(.)
+  # reactiveValues object for storing current data set.
+  vals <- reactiveValues(
+    data = NULL,
+    dMat = NULL,
+    center = NULL,
+    zoom = NULL
+  )
 
-       dMat <<- geodist(dp.locat, measure = "cheap")
-     }
-    )
-    
-    num_row <<- nrow(data)
-
-    dummy <- 1:num_row
-    data <- st_sf(data.frame(data, as.data.frame(dummy)))
-
-    data.copy <- data
-    st_geometry(data.copy) <- NULL
-    
-    varname <<- colnames(data.copy)
-    data <<- data
-
-    updateSelectInput(session, "input_type1",
-                      label = "Corellation pair 1",
-                      choices = varname[!varname %in% "dummy"],
-                      selected = varname[1]
-    )
-    
-    updateSelectInput(session, "input_type2",
-                      label = "Corellation pair 2",
-                      choices = varname[!varname %in% "dummy"],
-                      selected = varname[2]
-    )
-    updateSelectInput(session, "input_type3",
-                        label = "Control variables",
-                        choices = varname
+  output$map <- renderPlotly({
+    plot_mapbox() %>%
+      layout(
+        title=list(text = "Please load data", y = 0.5),
+        font = list(color='white'),
+        plot_bgcolor = '#191A1A',
+        paper_bgcolor = '#191A1A',
+        mapbox=mapbox.layout
       )
   })
-  
-  observe({
-    if (is.null(input$file1)) {
-      output$map <- renderPlotly({
-        plot_mapbox() %>%
-          layout(
-            title=list(text = "Please load data", y = 0.5),
-            font = list(color='white'),
-            plot_bgcolor = '#191A1A',
-            paper_bgcolor = '#191A1A',
-            mapbox = list(style = style)
-          )
-      })
-      
-      output$plot <- renderPlotly({
-          plotly_empty() %>%
-            layout(
-              font = list(color='white'),
-              plot_bgcolor = '#191A1A',
-              paper_bgcolor = '#191A1A'
-            ) 
-      })
-    } else{
-      bounds <- st_bbox(data)
-      center.lon <- bounds$xmin + (bounds$xmax - bounds$xmin)/2
-      center.lat <- bounds$ymin + (bounds$ymax - bounds$ymin)/2
-      zoom.lon <- log(180/abs(center.lon - bounds$xmin))/log(2)
-      zoom.lat <- log(90/abs(center.lat - bounds$ymin))/log(2)
-      zoom.center <- mean(zoom.lon, zoom.lat)
 
-      output$map <- renderPlotly({
-        plot_mapbox() %>%
-          layout(
-            font = list(color='white'),
-            plot_bgcolor = '#191A1A',
-            paper_bgcolor = '#191A1A',
-            mapbox = list(
-              style = style,
-              zoom = zoom.center,
-              center = list(lat = center.lat,
-                            lon = center.lon)
-            )
-          )
-      })
-
-    }
+  output$plot <- renderPlotly({
+    plotly_empty() %>%
+      layout(
+        font = list(color='white'),
+        plot_bgcolor = '#191A1A',
+        paper_bgcolor = '#191A1A'
+      )
   })
-  
+
+  observeEvent(input$file1, {
+    data <- sf::st_read(input$file1$datapath) %>% st_transform(4326)
+    num_row <- nrow(data)
+    num_col <- ncol(data)
+    varnames <- colnames(data) # probably should remove "geom"
+
+    if (num_col < 3) {
+      showModal(modalDialog(
+        title = "Invalid Data",
+        "Data must have at least 2 variables for GW correlation."
+      ))
+    }
+    # todo: disable partial correlation if uploaded data only has 2 variables.
+    else {
+      dummy <- 1:num_row
+      vals$data <- cbind(data, dummy)
+
+      withProgress(
+        message = 'Building distance matrix',
+        detail = '...',
+        value = 1,
+      {
+        dp.locat <- sf::st_centroid(data) %>% sf::st_coordinates()
+        vals$dMat <- geodist(dp.locat, measure = "cheap")
+      }
+      )
+
+      updateSelectInput(session, "input_type1",
+                        label = "Corellation pair 1",
+                        choices = varnames[!varnames %in% "dummy"],
+                        selected = varnames[1]
+      )
+
+      updateSelectInput(session, "input_type2",
+                        label = "Corellation pair 2",
+                        choices = varnames[!varnames %in% "dummy"],
+                        selected = varnames[2]
+      )
+      updateSelectInput(session, "input_type3",
+                        label = "Control variables",
+                        choices = varnames[!varnames %in% "dummy"]
+      )
+    }
+
+    view.extent <- get.viewExtent(vals$data)
+    vals$center <- view.extent[[1]]
+    vals$zoom <- view.extent[[2]]
+
+    map.features <- plot_mapbox(data = vals$data, opacity = input$slider2) %>%
+      add_sf(
+        color =  I("violet"),
+        showlegend = FALSE
+      ) %>%
+      layout(
+        font = list(color='white'),
+        plot_bgcolor = '#191A1A',
+        paper_bgcolor = '#191A1A',
+        mapbox = c(
+          mapbox.layout,
+          list(
+            zoom = vals$zoom,
+            center = list(lat = vals$center[2],
+                          lon = vals$center[1])
+          )
+        )
+      )
+    output$map <- renderPlotly({map.features})
+  })
+
+  # todo: add observe event to update variable selections
   observeEvent(input$submit, {
     if (is.null(input$file1)) {
       showModal(modalDialog(
@@ -207,29 +231,12 @@ server <- function(input, output, session) {
       ))
       return()
     }
-    bounds <- st_bbox(data)
-    # a very poor approximation, but close enough
-    center.lon <- bounds$xmin + (bounds$xmax - bounds$xmin)/2
-    center.lat <- bounds$ymin + (bounds$ymax - bounds$ymin)/2
-    zoom.lon <- log(180/abs(center.lon - bounds$xmin))/log(2)
-    zoom.lat <- log(90/abs(center.lat - bounds$ymin))/log(2)
-    zoom.center <- (zoom.lon + zoom.lat)/2
 
     withProgress(
       message = 'Calculating GW statistics',
       detail = 'This may take a while...',
       value = 1,
       {
-        rpal <- brewer.pal(n = 11, name = "RdBu")
-        rpal_plotly <- list()
-        rang <- seq_along(rpal)
-        for (ind in rang) {
-          rpal_plotly[[ind]] <- list(
-            (ind - min(rang))/(max(rang) - min(rang)),
-            rpal[ind]
-          )
-        }
-        pal1 <- colorBin("RdBu", c(-1,1), bins=11, na.color = "#bdbdbd")
         var1 <- input$input_type1
         var2 <- input$input_type2
         if (is.null(input$input_type3)) {
@@ -247,16 +254,6 @@ server <- function(input, output, session) {
             vn <- paste0("scorr_", var1, ".", var2)
             vn2 <- paste0("scorr_pval_", var1, ".", var2)
           }
-          shapefile <- gwpcor_calc(
-            sdata = data,
-            var1 = var1,
-            var2 = var2,
-            var3 = var3,
-            method = input$radio2,
-            kernel = input$input_type4,
-            b = input$slider,
-            dMat = dMat
-          )
         }
         else {
           if (input$radio2=="pearson") {
@@ -267,43 +264,53 @@ server <- function(input, output, session) {
             vn <- paste0("spcorr_",var1,".",var2)
             vn2 <- paste0("spcorr_pval_",var1,".",var2)
           }
-          shapefile <- gwpcor_calc(sdata = data,
-          var1 = var1,
-          var2 = var2,
-          var3 = var3,
+        }
+        selected_vars <- c(var1, var2, var3)
+
+        gwpcor.surface <- gwpcor(
+          sdata = vals$data,
+          vars = selected_vars,
           method = input$radio2,
           kernel = input$input_type4,
-          b = input$slider,
-          dMat = dMat)
-        }
-        shapefile_selected <- shapefile %>%
+          bw = input$slider,
+          adaptive = TRUE,
+          dMat = vals$dMat
+        )$SDF %>%
+          st_transform(.,4326) %>%
           dplyr::rename(val = vn) %>%
           dplyr::rename(val2 = vn2) %>%
-          dplyr::mutate(var1 = data[[var1]],
-        var2 = data[[var2]]) %>%
+          dplyr::mutate(
+            var1 = vals$data[[var1]],
+            var2 = vals$data[[var2]]
+          ) %>%
           dplyr::select(val, val2, var1, var2)
+
         for (control.variable in var3) {
-          shapefile_selected <- cbind(shapefile_selected, data[[control.variable]])
+          gwpcor.surface <- cbind(gwpcor.surface, vals$data[[control.variable]])
         }
+
         var3.names <- paste0("var",3:(2+length(var3)))
+        # print(var3.names)
         table.names <- c(c('val', 'val2', 'var1', 'var2'), var3.names, 'geometry')
-        colnames(shapefile_selected) <- table.names
+        colnames(gwpcor.surface) <- table.names
         name.mapping <- c(var1, var2, var3)
         names(name.mapping) <- c(c('var1', 'var2'), var3.names)
-        shared_data <- SharedData$new(shapefile_selected)
+
+        shared_data <- SharedData$new(gwpcor.surface)
       }
     )
 
     output$map <- renderPlotly({
       plot_mapbox(
-        source = "map"
+        source = "map",
+        opacity = as.numeric(input$slider2),
+        alpha = as.numeric(input$slider2)
       ) %>%
         add_sf(
           data = shared_data,
           split = ~cut(val, b = c(-1,-.8,-.6, -.4, -.2, 0, .2, .4, .6, .8, 1)),
           color = ~I(pal1(val)),
           colors = rpal,
-          opacity = as.integer(input$slider2),
           showlegend = FALSE,
           text = ~val
         ) %>%
@@ -311,7 +318,6 @@ server <- function(input, output, session) {
           data = shared_data,
           split = ~cut(val2, labels = "> 0.01", b = c(.01, 1)),
           color = I('black'),
-          opacity = as.integer(input$slider2),
           showlegend = TRUE,
           visible = 'legendonly',
           text = ~val
@@ -320,7 +326,6 @@ server <- function(input, output, session) {
           data = shared_data,
           split = ~cut(val2, labels = "> 0.05", b = c(.05, 1)),
           color = I('black'),
-          opacity = as.integer(input$slider2),
           showlegend = TRUE,
           visible = 'legendonly',
           text = ~val
@@ -342,18 +347,19 @@ server <- function(input, output, session) {
             x = 0.5,
             yanchor = "bottom"
           ),
-          mapbox = list(
-            style = style,
-            zoom = zoom.center,
-            center = list(
-              lat = center.lat,
-              lon = center.lon
+          mapbox = c(
+            mapbox.layout,
+            list(
+              zoom = vals$zoom,
+              center = list(lat = vals$center[2],
+                            lon = vals$center[1])
             )
           )
         )
       }
     )
     
+    # scatter plots
     output$plot <- renderPlotly({
       if (input$radio=="cor") {
         plot_ly(
@@ -397,8 +403,8 @@ server <- function(input, output, session) {
           var.x <- variable.pairs[[i]][2]
           plt <- plt %>% add_markers(
             text = ~paste('GW coefficient: ', val),
-            x = shapefile_selected[[var.x]],
-            y = shapefile_selected[[var.y]],
+            x = gwpcor.surface[[var.x]],
+            y = gwpcor.surface[[var.y]],
             visible = set.visible,
             marker=list(
               color = ~val,
@@ -433,7 +439,6 @@ server <- function(input, output, session) {
             )
           )
         }
-
         plt %>%
           layout(
             font = list(color='white'),
@@ -457,6 +462,12 @@ server <- function(input, output, session) {
       }
     })
   })
+
+  observeEvent(input$slider2, {
+    plotlyProxy("map", session) %>%
+    plotlyProxyInvoke("restyle", list(opacity=input$slider2))
+  })
+
 }
 
 shinyApp(ui, server)
