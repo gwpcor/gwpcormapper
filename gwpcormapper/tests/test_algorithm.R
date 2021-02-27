@@ -10,7 +10,7 @@ library(GWpcor)
 library(Rcpp)
 library(corpcor)
 
-source("../helpers.R")
+source("gwpcormapper/helpers.R")
 
 # load data in various required formats
 
@@ -63,38 +63,3 @@ lib <- GWpcor::gwpcor(
 
 all.equal(app$SDF$corr_Daytime.Population.Population.Density, lib$SDF$corr_Daytime.Population.Population.Density)
 all.equal(app$SDF$corr_pval_Daytime.Population.Population.Density, lib$SDF$corr_pval_Daytime.Population.Population.Density)
-
-x <- sf::st_drop_geometry(sdata) %>%
-  dplyr::select(selected_vars) %>%
-  as.matrix()
-
-
-corr.pval <- function (m, n) {
-  r <- cov2cor(m)
-  t <- r * sqrt((n - 2) / (1 - r ^ 2))
-  p.value <- 2 * pt(-abs(t), (n - 2))
-  diag(p.value) <- 0
-  return(p.value)
-}
-
-dist.vi <- dMat[, 100]
-sourceCpp("../gwpcor.cpp")
-W.i <- calc_weight(type = kernel, adapt = adaptive, dist_vec =dist.vi, bw =bw)
-sum.w <- sum(W.i)
-Wi <- W.i / sum.w
-
-ans_covwt <-  cov.wt(x, wt = Wi, cor = TRUE)
-cov.matrix <- ans_covwt$cov
-corr.matrix <- ans_covwt$cor
-corr.pval.matrix <- corr.pval(ans_covwt$cov, length(Wi[Wi != 0]))
-
-
-foo <- corrPval(ans_covwt$cor, length(Wi[Wi != 0]))
-corr.pval.matrix
-foo
-
-
-test <- c(0,1,2,3,1,0,0,2,0,2,3,0)
-length(test)
-length(test[test != 0])
-foobar(test)

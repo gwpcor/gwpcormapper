@@ -12,7 +12,7 @@ library(crosstalk)
 library(viridis)
 library(leaflet)
 
-source("helpers.R")
+source("gwpcormapper/helpers.R")
 
 readRenviron(".env")
 
