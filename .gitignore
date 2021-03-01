@@ -1,12 +1,25 @@
+# R files
 .Rproj.user
 .Rhistory
 .Renviron
 .RData
 .Ruserdata
+
+# environmental variables
 .env
+
+# IDEs
 .idea
-data/*.geojson
+
+# system files
 .DS_Store
+
+# benchmark and testing data
+data/*.geojson
 benchmarks/cb_2019_us_county_500k/
 benchmarks/cb_2019_us_cousub_500k/
 benchmarks/cb_2019_us_state_500k/
+
+#shiny server config
+shiny-server.conf
+shiny-server.sh

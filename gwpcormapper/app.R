@@ -11,6 +11,8 @@ library(plotly)
 library(crosstalk)
 library(viridis)
 library(leaflet)
+library(tools)
+library(shinyjs)
 
 source("gwpcormapper/helpers.R")
 
@@ -55,16 +57,34 @@ for (ind in rang) {
 }
 pal1 <- colorBin(rpal, c(-1,1), bins=11, na.color = "#bdbdbd")
 
+supported.types <- c(
+  "GPKG",
+  "GeoJSON",
+  "ESRI Shapefile",
+  "CSV"
+)
+
 ui <- dashboardPage(
   dashboardHeader(title = "gwpcorMapper"),
   dashboardSidebar(
     width=230,
     sidebarMenu(
-    fileInput("file1", NULL,
-              buttonLabel = "Load data",
-              placeholder = "No file selected",
-              multiple = FALSE,
-              accept = c(".geojson", ".gpkg", ".shp")),
+    div(style="display:inline-block",
+        fluidRow(
+          column(4,
+                 actionButton("load", "Load data")
+          ),
+          column(8,
+                 disabled(textInput("label", NULL, placeholder = "   No file selected"))
+          )
+        )
+    ),
+    conditionalPanel(
+      condition = "input.label != ''",
+      div(class='progress-bar', 'Upload Complete',
+          style="margin-left: 15px; margin-top: -20px; margin-bottom: 20px; padding: 0; width: 202px;"
+      )
+    ),
     radioButtons(inputId = "radio", label = "Type",
                  choices = list("GW correlation" = "cor",
                                 "GW partial correlation" = "pcor"),
@@ -103,19 +123,14 @@ ui <- dashboardPage(
     sliderInput("slider2", "Map opacity:", 0, 1, 0.5)
   )),
   dashboardBody(
+    useShinyjs(),
     tags$head(
+      tags$style("#load {display: inline; margin-top: 12px;}"),
+      tags$style("#label {display: inline; margin-left: -28px; padding: 0px; width: 120px;}"),
       tags$style("#map {height: calc(100vh - 60px) !important; padding: 0; margin: 0;}"),
       tags$style("#plot {height: calc(100vh - 60px) !important; padding: 0; margin: 0;}"),
-      tags$style(".shiny-notification {position: fixed; top: 50% ;left: 50%}"),
-      tags$style(".shiny-input-container {padding: 0; margin: 0;}"),
-      tags$style("#file1_progress {padding: 0; margin: 0;}"),
-      tags$style("#file2_progress {padding: 0; margin: 0;}"),
-      tags$style(HTML("
-        div.col-sm-7 {padding: 0}
-        div.col-sm-5 {padding: 0}
-        .content {padding: 0}
-        .content-wrapper {background-color: #191A1A}
-        "))
+      tags$style("div.col-sm-7 {padding: 0} div.col-sm-5 {padding: 0}
+        .content {padding: 0} .content-wrapper {background-color: #191A1A}")
       ),
       column(7, plotlyOutput("map")),
       column(5, plotlyOutput("plot"))
@@ -128,9 +143,15 @@ server <- function(input, output, session) {
   # reactiveValues object for storing current data set.
   vals <- reactiveValues(
     data = NULL,
+    name = NULL,
     dMat = NULL,
     center = NULL,
     zoom = NULL
+  )
+
+  loader <- reactiveValues(
+    multiple = FALSE,
+    accept = NULL
   )
 
   output$map <- renderPlotly({
@@ -153,17 +174,128 @@ server <- function(input, output, session) {
       )
   })
 
-  observeEvent(input$file1, {
-    data <- sf::st_read(input$file1$datapath) %>% st_transform(4326)
+  output$dynUpload <- renderUI({
+    fileInput(
+      "upload",
+      NULL,
+      buttonLabel = "Upload",
+      placeholder = "No file selected",
+      multiple = loader$multiple,
+      accept = loader$accept
+    )
+  })
+
+  dataLoader <- function() {
+    modalDialog(
+      selectInput("filetype", 'Load Data',
+                  c(`Select a file type`='', supported.types)),
+      conditionalPanel(
+        condition = "input.filetype == 'CSV'",
+        span('Please specify the longitude and latitude column
+                 names to read from.'),
+        textInput(inputId = "x",
+                    label = "longitute column name"),
+        textInput(inputId = "y",
+                  label = "latidude column name")
+      ),
+
+      conditionalPanel(
+        condition = "input.filetype == 'ESRI Shapefile'",
+        span('You must select and upload ALL shapefile
+                 required files (.shp, .shx, .dbf, etc.'),
+      ),
+
+      footer = tagList(
+        div(style="display:inline",
+            fluidRow(
+              column(4,
+                     modalButton("Cancel")
+              ),
+              column(8,
+                     conditionalPanel(
+                       "input.filetype != '' && input.filetype != 'CSV' ||
+                       input.filetype == 'CSV' && input.x != '' && input.y != ''",
+                       uiOutput("dynUpload")
+                     )
+              )
+            )
+        )
+      ),
+      size = 's'
+    )
+  }
+
+  getData <- function() {
+    # todo: add error handling and validation
+
+    if (input$filetype == "ESRI Shapefile") {
+      esri.files <- input$upload
+      tempdirname <- dirname(esri.files$datapath[1])
+      for (i in seq_len(nrow(esri.files))) {
+        file.rename(
+          esri.files$datapath[i],
+          paste0(tempdirname, "/", esri.files$name[i])
+        )
+      }
+      shapefile <- paste(
+        tempdirname,
+        esri.files$name[grep(pattern = "*.shp$", esri.files$name)],
+        sep = "/"
+      )
+      data <- st_read(shapefile) %>% st_transform(4326)
+      name <- esri.files$name[grep(pattern = "*.shp$", esri.files$name)]
+    }
+    else if (input$filetype == "CSV") {
+      data <- st_read(
+        input$upload$datapath,
+        options=c(
+          paste0("X_POSSIBLE_NAMES=", input$x),
+          paste0("Y_POSSIBLE_NAMES=", input$y)
+        )
+      )
+      name <- input$upload$name
+    }
+    else {
+      data <- sf::st_read(input$upload$datapath) %>% st_transform(4326)
+      name <- input$upload$name
+    }
+    updateTextInput(session, "label", value=paste0("   ", name))
+    return(data)
+  }
+
+  observeEvent(input$load, {
+    showModal(dataLoader())
+  })
+
+  observeEvent(input$filetype, {
+    type <- input$filetype
+
+    if (type == "ESRI Shapefile") {
+      loader$multiple <- TRUE
+      loader$accept <- c('.shp', '.dbf', '.sbn', '.sbx', '.shx', '.prj')
+    }
+    else if (type == "CSV") {
+      loader$multiple <- FALSE
+      loader$accept <- ".csv"
+    }
+    else if (type == "GPKG") {
+      loader$multiple <- FALSE
+      loader$accept <- ".gpkg"
+    }
+    else if (type == "GeoJSON") {
+      loader$multiple <- FALSE
+      loader$accept <- ".geojson"
+    }
+  })
+
+  observeEvent(input$upload, {
+    data <- getData()
     num_row <- nrow(data)
     num_col <- ncol(data)
     varnames <- colnames(data) # probably should remove "geom"
 
     if (num_col < 3) {
-      showModal(modalDialog(
-        title = "Invalid Data",
-        "Data must have at least 2 variables for GW correlation."
-      ))
+      # showModal(dataModal(failed = TRUE))
     }
     # todo: disable partial correlation if uploaded data only has 2 variables.
     else {
@@ -174,10 +306,10 @@ server <- function(input, output, session) {
         message = 'Building distance matrix',
         detail = '...',
         value = 1,
-      {
-        dp.locat <- sf::st_centroid(data) %>% sf::st_coordinates()
-        vals$dMat <- geodist(dp.locat, measure = "cheap")
-      }
+        {
+          dp.locat <- sf::st_centroid(vals$data) %>% sf::st_coordinates()
+          vals$dMat <- geodist(dp.locat, measure = "cheap")
+        }
       )
 
       updateSelectInput(session, "input_type1",
@@ -220,11 +352,16 @@ server <- function(input, output, session) {
         )
       )
     output$map <- renderPlotly({map.features})
+      removeModal()
+    # }
+    # else {
+    #   showModal(dataModal(failed = TRUE))
+    # }
   })
 
   # todo: add observe event to update variable selections
   observeEvent(input$submit, {
-    if (is.null(input$file1)) {
+    if (is.null(vals$data)) {
       showModal(modalDialog(
         title = "Missing data!",
         "Please load your dataset and distance matrix file."
@@ -290,7 +427,6 @@ server <- function(input, output, session) {
         }
 
         var3.names <- paste0("var",3:(2+length(var3)))
-        # print(var3.names)
         table.names <- c(c('val', 'val2', 'var1', 'var2'), var3.names, 'geometry')
         colnames(gwpcor.surface) <- table.names
         name.mapping <- c(var1, var2, var3)
