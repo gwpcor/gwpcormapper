@@ -69,7 +69,6 @@ ui <- dashboardPage(
   dashboardSidebar(
     width=230,
     sidebarMenu(
-      useShinyjs(),
     div(style="display:inline-block",
         fluidRow(
           column(4,
@@ -130,7 +129,6 @@ ui <- dashboardPage(
       tags$style("#label {display: inline; margin-left: -28px; padding: 0px; width: 120px;}"),
       tags$style("#map {height: calc(100vh - 60px) !important; padding: 0; margin: 0;}"),
       tags$style("#plot {height: calc(100vh - 60px) !important; padding: 0; margin: 0;}"),
-      tags$style(".disabled .btn {background-color: #cccccc; color: #666666}"),
       tags$style("div.col-sm-7 {padding: 0} div.col-sm-5 {padding: 0}
         .content {padding: 0} .content-wrapper {background-color: #191A1A}")
       ),

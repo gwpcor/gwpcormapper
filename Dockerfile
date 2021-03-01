@@ -1,7 +1,7 @@
 FROM rocker/geospatial:3.6.3
 RUN export ADD=shiny && bash /etc/cont-init.d/add
 
-RUN Rscript -e "install.packages(c('shinydashboard', 'leaflet', 'plotly', 'geodist', 'corpcor'), repos='http://cran.rstudio.com/')"
+RUN Rscript -e "install.packages(c('shinydashboard', 'leaflet', 'plotly', 'geodist', 'corpcor', 'shinyjs'), repos='http://cran.rstudio.com/')"
 RUN mkdir /srv/shiny-server/gwpcormapper
 
 COPY shiny-server.sh /usr/bin/shiny-server.sh
