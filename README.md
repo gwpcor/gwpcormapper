@@ -14,7 +14,7 @@ This project holds the source code for `gwpcorMapper`: an R package for explorat
 Install the `gwpcormapper` package using `remotes` in an R terminal then launch the application by: 
 
 ```R
-remotes::install_github("naru-T/gwpcormapper")
+remotes::install_github("gwpcor/gwpcormapper")
 gwpcormapper::run_app()
 ```
 
