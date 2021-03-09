@@ -1,5 +1,5 @@
 # R files
-.Rproj.user
+*.Rproj
 .Rhistory
 .Renviron
 .RData
@@ -15,7 +15,7 @@
 .DS_Store
 
 # benchmark and testing data
-data/*.geojson
+*.geojson
 benchmarks/cb_2019_us_county_500k/
 benchmarks/cb_2019_us_cousub_500k/
 benchmarks/cb_2019_us_state_500k/
@@ -23,3 +23,10 @@ benchmarks/cb_2019_us_state_500k/
 #shiny server config
 shiny-server.conf
 shiny-server.sh
+
+# Rcpp object files
+*.o
+*.so
+.Rproj.user
+inst/doc
+Meta

@@ -1,0 +1,15 @@
+data-raw
+Meta
+doc
+tests
+*.o
+*.so
+*.md
+*.Rproj
+.gitattributes
+.gitignore
+.Rhistory
+.idea
+.Renviron
+.github
+.env

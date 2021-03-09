@@ -1,38 +1,41 @@
 # gwpcorMapper
 __a web-based tool for interactive geographically weighted correlation mapping__
 
-This project holds the source code for `gwpcorMapper`: an interactive mapping application
-for geographically weighted correlation and partial correlation.
+  <!-- badges: start -->
+[![Lifecycle: stable](https://img.shields.io/badge/lifecycle-stable-brightgreen.svg)](https://www.tidyverse.org/lifecycle/#stable)
+  <!-- badges: end -->
 
-## Usage
+This project holds the source code for `gwpcorMapper`: an R package for exploratory spatial data analysis
+ through the interactive mapping of geographically weighted correlation and partial correlation coefficients.
 
-You may choose to run gwpcorMapper locally or in a docker container. 
 
-### Docker:
+## Installation and Usage
 
-To run gwpcorMapper in Docker, make sure that you have install [docker](https://docs.docker.com/install/).
-Then, build and launch the container by executing the following commands in a terminal:
+Install the `gwpcormapper` package using `remotes` in an R terminal then launch the application by: 
 
-```bash 
+```R
+remotes::install_github("naru-T/gwpcormapper")
+gwpcormapper::run_app()
+```
+
+or build and launch using docker:
+
+```
 docker build -t gwpcormapper .
-docker run -p 80:3838 gwpcormapper
+docker run -p 80:80 gwpcormapper 
 ```
 
-You can use the application in a web browser by going to [http://localhost:8000](http://localhost:8000).
+To run via docker, please ensure that [docker](https://docs.docker.com/install/) is installed.
 
-#### Map Styles
+Please see the getting started vignette for more detailed instructions and examples in using the `gwpcormapper` package.
 
-gwpcorMapper uses Mapbox for its basemap, so it is possible to change the
-map style by supplying a mapbox token and style definition in the docker run command.
-For example:
+## Map Styles (Base Maps)
 
-```bash
- docker run -e MAPBOX_TOKEN=<your mapbox token> -e STYLE=dark -p 80:3838 gwpcormapper
-```
+The default basemap used is [CARTO DarkMatter](https://carto.com/blog/getting-to-know-positron-and-dark-matter/) 
+ however, this may be changed by declaring either a web-tile source URL or by specifying a [mapbox style](https://docs.mapbox.com/api/maps/styles/)
+ as an environmental variable. Please follow the guide for detailed instructions on using custom base maps.
 
-The default style used is `carto-darkmatter`, which does not require a mapbox token.
-
-### Local:
+## Local Installation (for development):
 
 To run the application locally, make sure the following dependencies are installed:
 
@@ -41,10 +44,4 @@ To run the application locally, make sure the following dependencies are install
 * GEOS (>= 3.7.1)
 * Proj.4 (>= 4.8.0)
 
-Then launch the Shiny app in R Studio or your favorite R IDE.
-
-If you dont use an IDE, you can run the following command from this project's directory:
-
-```bash
-R -e "shiny::runApp('gwpcormapper')"
-```
+Then launch the Shiny app by running the code at `dev/run_dev.R`

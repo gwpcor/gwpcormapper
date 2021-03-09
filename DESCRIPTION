@@ -1,0 +1,42 @@
+Package: gwpcormapper
+Title: gwpcormapper
+Version: 0.1.0
+Authors@R: person('Joseph', 'Percival', email = 'ipercival@gmail.com', role = c('cre', 'aut'))
+Description: An interactive mapping tool for geographically weighted correlation and partial correlation.
+License: GPL (>= 3)
+Imports: 
+    config,
+    golem,
+    shiny,
+    processx,
+    attempt,
+    DT,
+    glue,
+    htmltools,
+    shinydashboard,
+    sf,
+    dplyr,
+    geodist,
+    plotly,
+    crosstalk,
+    viridis,
+    leaflet,
+    tools,
+    shinyjs,
+    Rcpp,
+    corpcor,
+    pkgload
+LinkingTo: Rcpp
+Encoding: UTF-8
+LazyData: true
+RoxygenNote: 7.1.1
+Suggests: 
+    testthat (>= 3.0.0),
+    knitr,
+    rmarkdown
+Config/testthat/edition: 3
+URL: https://github.com/naru-T/gwpcormapper
+BugReports: https://github.com/naru-T/gwpcormapper/issues
+Depends: 
+    R (>= 2.10)
+VignetteBuilder: knitr
