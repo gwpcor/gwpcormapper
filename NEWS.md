@@ -1,3 +1,10 @@
+# gwpcormapper 0.1.1
+
+* Released version 0.1.1!
+* Changes include:
+  * minor refactoring to remove package build warnings
+  * update source code url
+
 # gwpcormapper 0.1.0
 
 * Released version 0.1.0!
