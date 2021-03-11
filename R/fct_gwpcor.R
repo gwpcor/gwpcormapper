@@ -13,7 +13,7 @@ gwpcor <- function(sdata, vars, method = c("pearson", "spearman"),
     stop("adaptive kernel should be between 0 and 1")
   }
 
-  if (!is(sdata, "sf")) {
+  if (!methods::is(sdata, "sf")) {
     stop("Data must be sf")
   }
 

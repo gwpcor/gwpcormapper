@@ -225,8 +225,8 @@ app_server <- function( input, output, session ) {
       {
         var1 <- input$var1
         var2 <- input$var2
-        vn <- paste0("corr_", var1, ".", var2)
-        vn2 <- paste0("corr_pval_", var1, ".", var2)
+        val <- paste0("corr_", var1, ".", var2)
+        val2 <- paste0("corr_pval_", var1, ".", var2)
         if (input$type=="cor") {
           var3 <- "dummy"
         }
@@ -244,9 +244,9 @@ app_server <- function( input, output, session ) {
           adaptive = TRUE,
           dMat = vals$dMat
         )$SDF %>%
-          st_transform(.,4326) %>%
-          dplyr::rename(val = vn) %>%
-          dplyr::rename(val2 = vn2) %>%
+          st_transform(4326) %>%
+          dplyr::rename(val = val) %>%
+          dplyr::rename(val2 = val2) %>%
           dplyr::mutate(
             var1 = vals$data[[var1]],
             var2 = vals$data[[var2]]
@@ -267,7 +267,7 @@ app_server <- function( input, output, session ) {
         vals$shared_data <- shared_data
 
         variables <- table.names[3:(length(table.names)-1)]
-        variable.pairs <- combn(variables, 2, simplify=F)
+        variable.pairs <- utils::combn(variables, 2, simplify=F)
 
         btns <- list()
         visibles <- list()
