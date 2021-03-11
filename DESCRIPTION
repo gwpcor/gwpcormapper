@@ -1,9 +1,19 @@
 Package: gwpcormapper
-Title: gwpcormapper
-Version: 0.1.0
-Authors@R: person('Joseph', 'Percival', email = 'ipercival@gmail.com', role = c('cre', 'aut'))
+Title: gwpcorMapper: Geographically Weighted Partial Correlation Mapper
+Version: 0.1.1
+Authors@R:
+    c(person(given = "Joseph Emile Honour",
+             family = "Percival",
+             role = c("aut", "cre"),
+             email = "ipercival@gmail.com",
+             comment = c(ORCID = "0000-0001-5941-4601")),
+      person(given = "Narumasa",
+             family = "Tsutsumida",
+             role = "aut",
+             email = "rsnaru.jp@gmail.com",
+             comment = c(ORCID = "0000-0002-6333-0301")))
 Description: An interactive mapping tool for geographically weighted correlation and partial correlation.
-License: GPL (>= 3)
+License: GPL (>= 3) + file LICENSE
 Imports: 
     config,
     golem,
@@ -25,7 +35,8 @@ Imports:
     shinyjs,
     Rcpp,
     corpcor,
-    pkgload
+    pkgload,
+    methods
 LinkingTo: Rcpp
 Encoding: UTF-8
 LazyData: true
@@ -35,8 +46,8 @@ Suggests:
     knitr,
     rmarkdown
 Config/testthat/edition: 3
-URL: https://github.com/naru-T/gwpcormapper
-BugReports: https://github.com/naru-T/gwpcormapper/issues
+URL: https://github.com/gwpcor/gwpcormapper
+BugReports: https://github.com/gwpcor/gwpcormapper/issues
 Depends: 
     R (>= 2.10)
 VignetteBuilder: knitr

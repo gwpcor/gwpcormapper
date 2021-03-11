@@ -13,15 +13,16 @@
 
 ## Fill the DESCRIPTION ----
 ## Add meta data about your application
-golem::fill_desc(
-  pkg_name = "gwpcormapper",
-  pkg_title = "gwpcormapper",
-  pkg_description = "An interactive mapping tool for geographically weighted correlation and partial correlation.",
-  author_first_name = "Joseph",
-  author_last_name = "Percival",
-  author_email = "ipercival@gmail.com",
-  repo_url = "https://github.com/naru-T/gwpcormapper"
-)     
+# create DESCRIPTION manually
+# golem::fill_desc(
+#   pkg_name = "gwpcormapper",
+#   pkg_title = "gwpcormapper",
+#   pkg_description = "An interactive mapping tool for geographically weighted correlation and partial correlation.",
+#   author_first_name = "Joseph",
+#   author_last_name = "Percival",
+#   author_email = "ipercival@gmail.com",
+#   repo_url = "https://github.com/gwpcor/gwpcormapper"
+# )
 
 ## Set {golem} options ----
 golem::set_golem_options()

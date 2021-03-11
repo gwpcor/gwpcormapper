@@ -27,6 +27,7 @@ usethis::use_package("tools")
 usethis::use_package("shinyjs")
 usethis::use_package("Rcpp")
 usethis::use_package("corpcor")
+usethis::use_package("methods")
 
 ## Add helper functions ----
 ## Creates ftc_* and utils_*
