@@ -15,3 +15,8 @@ null
 \description{
 Launches gwpcorMapper.
 }
+\examples{
+\dontrun{
+gwpcormapper::run_app()
+}
+}

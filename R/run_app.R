@@ -10,7 +10,7 @@
 #' @importFrom shiny shinyApp
 #' @importFrom golem with_golem_options
 #' @return null
-#' @example
+#' @examples
 #' \dontrun{
 #' gwpcormapper::run_app()
 #' }
