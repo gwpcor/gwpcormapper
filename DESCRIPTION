@@ -1,5 +1,5 @@
 Package: gwpcormapper
-Title: gwpcorMapper: Geographically Weighted Partial Correlation Mapper
+Title: Geographically Weighted Partial Correlation Mapper
 Version: 0.1.1
 Authors@R:
     c(person(given = "Joseph Emile Honour",
@@ -12,9 +12,9 @@ Authors@R:
              role = "aut",
              email = "rsnaru.jp@gmail.com",
              comment = c(ORCID = "0000-0002-6333-0301")))
-Description: An interactive mapping tool for geographically weighted correlation and partial correlation.
-License: GPL (>= 3) + file LICENSE
-Imports: 
+Description: An interactive mapping tool for geographically weighted correlation and partial correlation. Geographically weighted partial correlation coefficients are calculated following Percival and Tsutsumida (2017) <doi: 10.1553/giscience2017_01_s36> and are described in greater detail in Percival et al. (2021) <arXiv: 2101.03491> as well as Tsutsumida et al. (2019) <doi: 10.5194/ica-abs-1-372-2019>.
+License: GPL (>= 3)
+Imports:
     config,
     golem,
     shiny,

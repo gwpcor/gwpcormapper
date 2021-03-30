@@ -10,9 +10,18 @@ An object of class \code{sf} (inherits from \code{data.frame}) with 3134 rows an
 \usage{
 tokyo2005
 }
+\value{
+An sf object with census statistics of the 23 special wards of Tokyo from the year 2005.
+}
 \description{
 The original source of the data is the Portal Site of Official Statistics of Japan website (https://www.e-stat.go.jp/)
 Note that the original dataset was modified to provide English translations.
+}
+\examples{
+\dontrun{
+data(tokyo2005)
+summary(tokyo2005)
+}
 }
 \references{
 \url{https://www.e-stat.go.jp/}

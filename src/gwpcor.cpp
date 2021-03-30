@@ -1,7 +1,5 @@
 //
 // Created by Joseph Percival on 2021/02/20.
-// The Function for correlation matrices is based on the functions
-// written by Anders Ellern Bilgrau (https://github.com/AEBilgrau/correlateR/blob/master/src/covFamily.cpp)
 //
 
 #include <Rcpp.h>
@@ -94,34 +92,20 @@ NumericVector calc_weight(String type, bool adapt, NumericVector dist_vec, doubl
 /*
  * GW correlation matrix
  */
-NumericMatrix cor_wt(NumericMatrix P, NumericVector Wi) {
-    const int m = P.nrow();
+NumericMatrix cor_wt(const NumericMatrix & P, const NumericVector & Wi) {
     const int n = P.ncol();
-
+    const int m = P.nrow();
     NumericMatrix cor(n, n);
 
-    if (m == 0) {
-        std::fill(cor.begin(), cor.end(), NumericVector::get_na());
-        return cor;
-    }
-
     NumericMatrix X(m, n);
+    NumericVector sd(n);
     NumericVector W = Wi / sum(Wi);
 
-    for (int j = 0; j < n; ++j) {
-        X(_, j) = P(_, j) - sum(P(_, j) * W);
-    }
-
-    for (int i = 0; i < m; i++) {
-        X(i,_) = X(i,_) * sqrt(W[i]);
-    }
-
-    NumericVector inv_sqrt_ss(n);
-
     for (int i = 0; i < n; ++i) {
-        inv_sqrt_ss(i) = 1/sqrt(sum(X(_, i) * X(_, i)));
+        X(_, i) = (P(_, i) - sum(P(_, i) * W)) * sqrt(W);
+        sd(i) = sqrt(sum(X(_, i) * X(_, i)));
         for (int j = 0; j <= i; ++j) {
-            cor(i, j) = sum(X(_,i) * X(_,j)) * inv_sqrt_ss(i) * inv_sqrt_ss(j);
+            cor(i, j) = sum(X(_, i) * X(_, j)) / (sd(i) * sd(j));
             cor(j, i) = cor(i, j);
         }
     }
