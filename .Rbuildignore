@@ -1,4 +1,4 @@
-^LICENSE\.md$
+^LICENSE$
 ^data-raw$
 ^.*\.Rproj$
 ^\.Rproj\.user$
@@ -18,3 +18,4 @@
 ^Meta$
 ^shiny-server\.conf$
 ^shiny-server\.sh$
+^vignettes$

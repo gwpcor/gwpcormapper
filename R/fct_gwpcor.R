@@ -21,6 +21,10 @@ gwpcor <- function(sdata, vars, method = c("pearson", "spearman"),
     stop("The method option should be 'pearson' or 'spearman'.")
   }
 
+  if (nrow(sdata) == 0) {
+    stop("data has no observations.")
+  }
+
   var_n <- length(vars)
 
   x <- sf::st_drop_geometry(sdata) %>%

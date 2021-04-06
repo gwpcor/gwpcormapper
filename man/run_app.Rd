@@ -9,6 +9,14 @@ run_app(...)
 \arguments{
 \item{...}{A series of options to be used inside the app.}
 }
+\value{
+null
+}
 \description{
 Launches gwpcorMapper.
+}
+\examples{
+\dontrun{
+gwpcormapper::run_app()
+}
 }
