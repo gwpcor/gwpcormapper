@@ -11,14 +11,25 @@ This project holds the source code for `gwpcorMapper`: an R package for explorat
 
 ## Installation and Usage
 
-Install the `gwpcormapper` package using `remotes` in an R terminal then launch the application by: 
+Install the `gwpcormapper` package from CRAN by:
+
+```R
+install.packages("gwpcormapper")
+```
+
+or get the latest version from GitHub via `remotes`:
 
 ```R
 remotes::install_github("gwpcor/gwpcormapper")
+```
+
+Then, launch the application by running the following in an R terminal:
+
+```R
 gwpcormapper::run_app()
 ```
 
-or build and launch using docker:
+Alternatively, gwpcorMapper can be built and launched using docker:
 
 ```
 docker build -t gwpcormapper .
