@@ -11,7 +11,8 @@
 # library(Rcpp)
 # library(corpcor)
 #
-# source("gwpcormapper/helpers.R")
+# sourceCpp("src/gwpcor.cpp")
+# source("R/fct_gwpcor.R")
 #
 # # load data in various required formats
 #
@@ -19,7 +20,7 @@
 # selected_vars <- c("total.population", "Daytime.Population", "Population.Density")
 #
 # # sf
-# sdata <- st_read("data/tokyo2005_sf.gpkg") %>%
+# sdata <- st_read("data-raw/tokyo2005_sf.gpkg") %>%
 #   st_transform(.,4326)
 #
 # # parameters
