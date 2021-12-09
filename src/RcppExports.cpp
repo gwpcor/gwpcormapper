@@ -5,6 +5,11 @@
 
 using namespace Rcpp;
 
+#ifdef RCPP_USE_GLOBAL_ROSTREAM
+Rcpp::Rostream<true>&  Rcpp::Rcout = Rcpp::Rcpp_cout_get();
+Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
+#endif
+
 // gwpcorRcpp
 List gwpcorRcpp(NumericMatrix dMat, double bw, NumericMatrix x, String kernel, bool adaptive, int nn);
 RcppExport SEXP _gwpcormapper_gwpcorRcpp(SEXP dMatSEXP, SEXP bwSEXP, SEXP xSEXP, SEXP kernelSEXP, SEXP adaptiveSEXP, SEXP nnSEXP) {

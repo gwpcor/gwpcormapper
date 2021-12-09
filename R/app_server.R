@@ -231,6 +231,8 @@ app_server <- function( input, output, session ) {
           var3 <- "dummy"
         }
         else {
+          val <- paste0("pcorr_", var1, ".", var2)
+          val2 <- paste0("pcorr_pval_", var1, ".", var2)
           var3 <- input$vars3
         }
         selected_vars <- c(var1, var2, var3)
