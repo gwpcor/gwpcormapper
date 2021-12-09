@@ -1,7 +1,7 @@
 # gwpcormapper 0.1.3
 * Released version 0.1.3!
 * Changes include:
-  * bug fixes.
+  * fix bug that was keeping partial correlation coefficients from being mapped.
 
 # gwpcormapper 0.1.2
 * Released version 0.1.2!
