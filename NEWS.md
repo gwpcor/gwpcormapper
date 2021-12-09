@@ -1,3 +1,8 @@
+# gwpcormapper 0.1.3
+* Released version 0.1.3!
+* Changes include:
+  * bug fixes.
+
 # gwpcormapper 0.1.2
 * Released version 0.1.2!
 * Changes include:
